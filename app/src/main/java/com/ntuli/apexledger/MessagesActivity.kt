@@ -2,12 +2,14 @@ package com.ntuli.apexledger
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.MessageThread
@@ -31,7 +33,9 @@ class MessagesActivity : AppCompatActivity() {
 
         val rv = findViewById<RecyclerView>(R.id.rvThreads)
         val tvEmptyState = findViewById<TextView>(R.id.tvEmptyState)
-        val fab = findViewById<FloatingActionButton>(R.id.fabNewMessage)
+        val etSubject = findViewById<EditText>(R.id.etSubject)
+        val etNewMessageBody = findViewById<EditText>(R.id.etNewMessageBody)
+        val btnStartConversation = findViewById<MaterialButton>(R.id.btnStartConversation)
 
         adapter = ThreadAdapter(emptyList()) { thread ->
             val intent = Intent(this, ConversationActivity::class.java)
@@ -42,8 +46,18 @@ class MessagesActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
-        fab.setOnClickListener {
-            createNewThread()
+        btnStartConversation.setOnClickListener {
+            val subject = etSubject.text.toString().trim()
+            val firstMessage = etNewMessageBody.text.toString().trim()
+
+            if (subject.isEmpty()) {
+                Toast.makeText(this, "Please enter a subject", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            createNewThread(subject, firstMessage)
+            etSubject.text.clear()
+            etNewMessageBody.text.clear()
         }
 
         loadThreads(tvEmptyState)
@@ -73,20 +87,34 @@ class MessagesActivity : AppCompatActivity() {
             }
     }
 
-    private fun createNewThread() {
+    private fun createNewThread(subject: String, firstMessage: String) {
         val uid = auth.currentUser?.uid ?: return
+        val urgentKeywords = listOf("urgent", "deadline", "penalty", "asap", "overdue")
+        val isUrgent = urgentKeywords.any { firstMessage.lowercase().contains(it) }
+
         val threadData = hashMapOf(
             "clientId" to uid,
-            "subject" to "New conversation",
-            "lastMessagePreview" to "",
-            "isUrgent" to false,
+            "subject" to subject,
+            "lastMessagePreview" to firstMessage,
+            "isUrgent" to isUrgent,
             "createdDate" to com.google.firebase.Timestamp.now()
         )
         db.collection("threads").add(threadData)
             .addOnSuccessListener { ref ->
+                if (firstMessage.isNotEmpty()) {
+                    val messageData = hashMapOf(
+                        "senderId" to uid,
+                        "messageBody" to firstMessage,
+                        "isUrgent" to isUrgent,
+                        "sentTimestamp" to com.google.firebase.Timestamp.now()
+                    )
+                    db.collection("threads").document(ref.id)
+                        .collection("messages")
+                        .add(messageData)
+                }
                 val intent = Intent(this, ConversationActivity::class.java)
                 intent.putExtra("threadId", ref.id)
-                intent.putExtra("subject", "New conversation")
+                intent.putExtra("subject", subject)
                 startActivity(intent)
             }
     }
