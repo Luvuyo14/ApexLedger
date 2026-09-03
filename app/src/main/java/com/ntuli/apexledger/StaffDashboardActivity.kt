@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -36,18 +37,29 @@ class StaffDashboardActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
+        setStat(R.id.statActiveClients, "Active Clients", "0")
+        setStat(R.id.statOpenTickets, "Open Tickets", "0")
+        setStat(R.id.statAccountants, "Accountants", "0")
+        setStat(R.id.statOverdue, "Overdue", "0")
+
+        colorStatBar(R.id.statActiveClients, R.color.primary)
+        colorStatBar(R.id.statOpenTickets, R.color.warning)
+        colorStatBar(R.id.statAccountants, R.color.success)
+        colorStatBar(R.id.statOverdue, R.color.danger)
+
         val uid = auth.currentUser?.uid
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
                     val fullName = doc.getString("full_name") ?: auth.currentUser?.email
                     val role = doc.getString("role") ?: "accountant"
-                    tvWelcome.text = "Welcome, $fullName"
+                    tvWelcome.text = "Welcome back, $fullName!"
                     tvRole.text = "Role: $role"
                 }
         }
 
-        loadAllOpenTickets()
+        loadAccountantsCount()
+        loadAssignedClientsAndTickets()
 
         btnLogout.setOnClickListener {
             auth.signOut()
@@ -56,24 +68,35 @@ class StaffDashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadAllOpenTickets() {
+    private fun loadAccountantsCount() {
+        db.collection("users")
+            .whereIn("role", listOf("accountant", "admin", "manager"))
+            .get()
+            .addOnSuccessListener { result ->
+                setStat(R.id.statAccountants, "Accountants", result.size().toString())
+            }
+    }
+
+    private fun loadAssignedClientsAndTickets() {
         val uid = auth.currentUser?.uid ?: return
 
-        // Step 1: find clients assigned to this accountant
         db.collection("users")
             .whereEqualTo("assignedAccountantId", uid)
             .get()
             .addOnSuccessListener { clientsResult ->
                 val clientIds = clientsResult.documents.map { it.id }
+                setStat(R.id.statActiveClients, "Active Clients", clientIds.size.toString())
 
                 if (clientIds.isEmpty()) {
                     adapter.updateData(emptyList())
+                    setStat(R.id.statOpenTickets, "Open Tickets", "0")
+                    setStat(R.id.statOverdue, "Overdue", "0")
                     return@addOnSuccessListener
                 }
 
-                // Firestore whereIn supports max 10 values per query
                 val batches = clientIds.chunked(10)
-                val allTickets = mutableListOf<Ticket>()
+                val allOpenTickets = mutableListOf<Ticket>()
+                var overdueCount = 0
                 var completedBatches = 0
 
                 for (batch in batches) {
@@ -93,13 +116,35 @@ class StaffDashboardActivity : AppCompatActivity() {
                                     dueDate = d.getString("dueDate") ?: ""
                                 )
                             }
-                            allTickets.addAll(tickets)
+                            allOpenTickets.addAll(tickets)
                             completedBatches++
                             if (completedBatches == batches.size) {
-                                adapter.updateData(allTickets)
+                                adapter.updateData(allOpenTickets)
+                                setStat(R.id.statOpenTickets, "Open Tickets", allOpenTickets.size.toString())
                             }
+                        }
+
+                    db.collection("tickets")
+                        .whereIn("clientId", batch)
+                        .whereEqualTo("status", "overdue")
+                        .get()
+                        .addOnSuccessListener { result ->
+                            overdueCount += result.size()
+                            setStat(R.id.statOverdue, "Overdue", overdueCount.toString())
                         }
                 }
             }
+    }
+
+    private fun setStat(includeId: Int, label: String, value: String) {
+        val container = findViewById<android.view.View>(includeId)
+        container.findViewById<TextView>(R.id.tvStatLabel).text = label
+        container.findViewById<TextView>(R.id.tvStatValue).text = value
+    }
+
+    private fun colorStatBar(includeId: Int, colorRes: Int) {
+        val container = findViewById<android.view.View>(includeId)
+        container.findViewById<android.view.View>(R.id.statAccentBar)
+            .setBackgroundColor(ContextCompat.getColor(this, colorRes))
     }
 }
