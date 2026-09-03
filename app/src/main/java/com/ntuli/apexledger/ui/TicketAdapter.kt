@@ -13,6 +13,7 @@ class TicketAdapter(private var items: List<Ticket>) :
     class TicketViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvNumber: TextView = view.findViewById(R.id.tvTicketNumber)
         val tvService: TextView = view.findViewById(R.id.tvTicketService)
+        val tvMeta: TextView = view.findViewById(R.id.tvTicketMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvStatusBadge)
     }
 
@@ -26,6 +27,13 @@ class TicketAdapter(private var items: List<Ticket>) :
         val ticket = items[position]
         holder.tvNumber.text = ticket.ticketNumber
         holder.tvService.text = ticket.serviceType.replace("_", " ").replaceFirstChar { it.uppercase() }
+
+        val metaParts = mutableListOf<String>()
+        if (ticket.clientName.isNotEmpty()) metaParts.add(ticket.clientName)
+        if (ticket.dueDate.isNotEmpty()) metaParts.add("Due ${ticket.dueDate}")
+        holder.tvMeta.text = metaParts.joinToString(" • ")
+        holder.tvMeta.visibility = if (metaParts.isEmpty()) View.GONE else View.VISIBLE
+
         holder.tvStatus.text = ticket.status.replace("_", " ").replaceFirstChar { it.uppercase() }
 
         val badgeRes = when (ticket.status) {

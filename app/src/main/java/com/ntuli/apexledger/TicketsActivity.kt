@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -39,12 +40,14 @@ class TicketsActivity : AppCompatActivity() {
         val rv = findViewById<RecyclerView>(R.id.rvTickets)
         val tvEmptyState = findViewById<TextView>(R.id.tvEmptyState)
         val fab = findViewById<FloatingActionButton>(R.id.fabNewTicket)
+        val btnRequestService = findViewById<MaterialButton>(R.id.btnRequestService)
 
         adapter = TicketAdapter(emptyList())
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
         fab.setOnClickListener { showNewTicketDialog() }
+        btnRequestService.setOnClickListener { showNewTicketDialog() }
 
         loadTickets(tvEmptyState)
     }
@@ -67,7 +70,8 @@ class TicketsActivity : AppCompatActivity() {
                         serviceType = d.getString("serviceType") ?: "general",
                         status = d.getString("status") ?: "open",
                         priority = d.getString("priority") ?: "medium",
-                        description = d.getString("description") ?: ""
+                        description = d.getString("description") ?: "",
+                        dueDate = d.getString("dueDate") ?: ""
                     )
                 }
                 adapter.updateData(tickets)

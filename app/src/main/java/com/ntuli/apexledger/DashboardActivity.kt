@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,6 +16,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -33,6 +37,7 @@ class DashboardActivity : AppCompatActivity() {
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         val navigationView = findViewById<NavigationView>(R.id.navigationView)
         val tvWelcome = findViewById<TextView>(R.id.tvWelcome)
+        val tvDate = findViewById<TextView>(R.id.tvDate)
         val tvRole = findViewById<TextView>(R.id.tvRole)
         val rvRecentTickets = findViewById<RecyclerView>(R.id.rvRecentTickets)
 
@@ -41,6 +46,10 @@ class DashboardActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
         }
+
+        // Date line, matching website's "Thursday, September 3, 2026"
+        val sdf = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+        tvDate.text = sdf.format(Date())
 
         // Ticket list setup
         ticketAdapter = TicketAdapter(emptyList())
@@ -55,7 +64,7 @@ class DashboardActivity : AppCompatActivity() {
                 .addOnSuccessListener { doc ->
                     val fullName = doc.getString("full_name") ?: auth.currentUser?.email
                     val role = doc.getString("role") ?: "client"
-                    tvWelcome.text = "Welcome, $fullName"
+                    tvWelcome.text = "Welcome back, $fullName!"
                     tvRole.text = "Role: $role"
                 }
         }
@@ -69,9 +78,13 @@ class DashboardActivity : AppCompatActivity() {
                 .addOnSuccessListener { result ->
                     val tickets = result.documents.map { doc ->
                         Ticket(
+                            ticketId = doc.id,
                             ticketNumber = doc.getString("ticketNumber") ?: doc.id,
                             serviceType = doc.getString("serviceType") ?: "general",
-                            status = doc.getString("status") ?: "open"
+                            status = doc.getString("status") ?: "open",
+                            priority = doc.getString("priority") ?: "medium",
+                            description = doc.getString("description") ?: "",
+                            dueDate = doc.getString("dueDate") ?: ""
                         )
                     }
                     ticketAdapter.updateData(tickets)
@@ -82,12 +95,6 @@ class DashboardActivity : AppCompatActivity() {
         if (uid != null) {
             loadStatCount("documents", "clientId", uid, R.id.statDocuments, "Documents")
             loadStatCount("tickets", "clientId", uid, R.id.statTickets, "Active Tickets")
-
-            db.collection("tickets")
-                .whereEqualTo("clientId", uid)
-                .whereEqualTo("status", "completed")
-                .get()
-                .addOnSuccessListener { }
 
             db.collection("messages")
                 .whereEqualTo("recipientId", uid)
@@ -106,14 +113,19 @@ class DashboardActivity : AppCompatActivity() {
                 }
         }
 
+        colorStatBar(R.id.statDocuments, R.color.primary)
+        colorStatBar(R.id.statMessages, R.color.warning)
+        colorStatBar(R.id.statTickets, R.color.success)
+        colorStatBar(R.id.statOverdue, R.color.danger)
+
         // Drawer navigation
         navigationView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> { /* already here */ }
                 R.id.nav_documents -> startActivity(Intent(this, DocumentsActivity::class.java))
-                R.id.nav_messages -> Toast.makeText(this, "Messages screen coming next", Toast.LENGTH_SHORT).show()
-                R.id.nav_tickets -> Toast.makeText(this, "Tickets screen coming next", Toast.LENGTH_SHORT).show()
-                R.id.nav_profile -> Toast.makeText(this, "Profile screen coming next", Toast.LENGTH_SHORT).show()
+                R.id.nav_messages -> startActivity(Intent(this, MessagesActivity::class.java))
+                R.id.nav_tickets -> startActivity(Intent(this, TicketsActivity::class.java))
+                R.id.nav_profile -> startActivity(Intent(this, ProfileActivity::class.java))
                 R.id.nav_logout -> {
                     auth.signOut()
                     startActivity(Intent(this, MainActivity::class.java))
@@ -124,6 +136,7 @@ class DashboardActivity : AppCompatActivity() {
             true
         }
     }
+
     private fun loadStatCount(collection: String, field: String, uid: String, includeId: Int, label: String) {
         db.collection(collection)
             .whereEqualTo(field, uid)
@@ -137,5 +150,11 @@ class DashboardActivity : AppCompatActivity() {
         val container = findViewById<android.view.View>(includeId)
         container.findViewById<TextView>(R.id.tvStatLabel).text = label
         container.findViewById<TextView>(R.id.tvStatValue).text = value
+    }
+
+    private fun colorStatBar(includeId: Int, colorRes: Int) {
+        val container = findViewById<android.view.View>(includeId)
+        container.findViewById<android.view.View>(R.id.statAccentBar)
+            .setBackgroundColor(ContextCompat.getColor(this, colorRes))
     }
 }

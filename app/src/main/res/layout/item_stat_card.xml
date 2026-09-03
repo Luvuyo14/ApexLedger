@@ -4,27 +4,40 @@
     android:layout_height="wrap_content"
     android:layout_weight="1"
     android:layout_margin="6dp"
-    android:orientation="vertical"
-    android:background="@drawable/bg_card_stroke"
-    android:padding="16dp">
+    android:orientation="horizontal"
+    android:background="@drawable/bg_card_stroke">
 
-    <TextView
-        android:id="@+id/tvStatLabel"
-        android:layout_width="wrap_content"
+    <View
+        android:id="@+id/statAccentBar"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:background="@color/primary" />
+
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Documents"
-        android:textColor="@color/gray_500"
-        android:textSize="12sp"
-        android:textStyle="bold" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="14dp">
 
-    <TextView
-        android:id="@+id/tvStatValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0"
-        android:textColor="@color/navy"
-        android:textStyle="bold"
-        android:textSize="26sp"
-        android:layout_marginTop="6dp" />
+        <TextView
+            android:id="@+id/tvStatLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Documents"
+            android:textColor="@color/gray_500"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/tvStatValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@color/navy"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
 </LinearLayout>

@@ -19,6 +19,25 @@
             app:navigationIcon="@drawable/ic_back_arrow"
             app:title="Service Tickets" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:padding="12dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRequestService"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+ Request a Service"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:backgroundTint="@color/success"
+                android:textColor="@color/white" />
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/tvEmptyState"
             android:layout_width="match_parent"

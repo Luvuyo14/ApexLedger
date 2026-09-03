@@ -6,5 +6,7 @@ data class Ticket(
     val serviceType: String = "",
     val status: String = "open",
     val priority: String = "medium",
-    val description: String = ""
+    val description: String = "",
+    val clientName: String = "",
+    val dueDate: String = ""
 )
