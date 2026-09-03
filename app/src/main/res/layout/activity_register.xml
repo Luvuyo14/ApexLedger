@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="20dp">
+
+            <View
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_brand_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="APEXLedger"
+                android:textColor="@color/navy"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="New Client Onboarding"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Register with Ntuli Accountants and Associates for secure financial services."
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView style="@style/Text.Body" android:text="Full Name *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" />
+                <EditText
+                    android:id="@+id/etFullName"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="textPersonName"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Email *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="textEmailAddress"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Phone *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="phone"
+                    android:hint="082 000 0000"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Tax Number (10 digits) *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etTaxNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="number"
+                    android:hint="e.g. 1234567890"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Service Preference *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <Spinner
+                    android:id="@+id/spinnerServicePreference"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="4dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="This assigns you directly to the accountant who handles that duty."
+                    android:textColor="@color/gray_400"
+                    android:textSize="10sp"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Physical Address *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="2"
+                    android:gravity="top"
+                    android:background="@drawable/bg_input_field"
+                    android:padding="14dp"
+                    android:hint="Street, suburb, city, postal code"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="textPassword"
+                    android:hint="Min 8 chars, 1 uppercase, 1 number"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                <TextView android:text="Confirm Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="textPassword"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" android:layout_marginBottom="18dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRegisterClient"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="Register Client"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/primary" />
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="14dp"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="13sp"
+                    android:gravity="center" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+</ScrollView>
