@@ -30,6 +30,7 @@ class ProfileActivity : AppCompatActivity() {
 
         val etFullName = findViewById<EditText>(R.id.etFullName)
         val tvEmail = findViewById<TextView>(R.id.tvEmailReadonly)
+        val tvAvatarInitials = findViewById<TextView>(R.id.tvAvatarInitials)
         val switchEmail = findViewById<SwitchMaterial>(R.id.switchEmail)
         val switchSms = findViewById<SwitchMaterial>(R.id.switchSms)
         val switchPush = findViewById<SwitchMaterial>(R.id.switchPush)
@@ -42,7 +43,9 @@ class ProfileActivity : AppCompatActivity() {
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
-                    etFullName.setText(doc.getString("full_name") ?: "")
+                    val fullName = doc.getString("full_name") ?: ""
+                    etFullName.setText(fullName)
+                    tvAvatarInitials.text = initialsFrom(fullName)
                     switchEmail.isChecked = doc.getBoolean("notify_email") ?: true
                     switchSms.isChecked = doc.getBoolean("notify_sms") ?: false
                     switchPush.isChecked = doc.getBoolean("notify_push") ?: true
@@ -60,6 +63,7 @@ class ProfileActivity : AppCompatActivity() {
             db.collection("users").document(uid).update(updates)
                 .addOnSuccessListener {
                     Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show()
+                    tvAvatarInitials.text = initialsFrom(etFullName.text.toString())
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Update failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -71,8 +75,16 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
 
+    private fun initialsFrom(name: String): String {
+        val parts = name.trim().split(" ").filter { it.isNotEmpty() }
+        return when {
+            parts.size >= 2 -> "${parts[0][0]}${parts[1][0]}".uppercase()
+            parts.size == 1 && parts[0].isNotEmpty() -> parts[0][0].uppercase()
+            else -> "?"
+        }
+    }
+
     private fun showChangePasswordDialog() {
-        val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, null)
         val container = android.widget.LinearLayout(this)
         container.orientation = android.widget.LinearLayout.VERTICAL
         container.setPadding(48, 24, 48, 0)
