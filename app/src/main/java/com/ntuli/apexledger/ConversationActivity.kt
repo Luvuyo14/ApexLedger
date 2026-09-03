@@ -1,4 +1,103 @@
 package com.ntuli.apexledger
 
-class ConversationActivity {
+import android.os.Bundle
+import android.widget.EditText
+import android.widget.ImageButton
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.ntuli.apexledger.ui.ChatMessage
+import com.ntuli.apexledger.ui.MessageAdapter
+
+class ConversationActivity : AppCompatActivity() {
+
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
+    private lateinit var adapter: MessageAdapter
+    private lateinit var threadId: String
+
+    // Keywords per your website's business rule for auto-flagging urgency
+    private val urgentKeywords = listOf("urgent", "deadline", "penalty", "asap", "overdue")
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_conversation)
+
+        auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
+
+        threadId = intent.getStringExtra("threadId") ?: return
+        val subject = intent.getStringExtra("subject") ?: "Conversation"
+
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar.title = subject
+        toolbar.setNavigationOnClickListener { finish() }
+
+        val rv = findViewById<RecyclerView>(R.id.rvMessages)
+        val etBody = findViewById<EditText>(R.id.etMessageBody)
+        val btnSend = findViewById<ImageButton>(R.id.btnSend)
+
+        val uid = auth.currentUser?.uid ?: return
+        adapter = MessageAdapter(emptyList(), uid)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = adapter
+
+        loadMessages()
+
+        btnSend.setOnClickListener {
+            val text = etBody.text.toString().trim()
+            if (text.isNotEmpty()) {
+                sendMessage(text)
+                etBody.text.clear()
+            }
+        }
+    }
+
+    private fun loadMessages() {
+        db.collection("threads").document(threadId)
+            .collection("messages")
+            .orderBy("sentTimestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { result, _ ->
+                if (result != null) {
+                    val messages = result.documents.map { d ->
+                        ChatMessage(
+                            senderId = d.getString("senderId") ?: "",
+                            messageBody = d.getString("messageBody") ?: "",
+                            isUrgent = d.getBoolean("isUrgent") ?: false
+                        )
+                    }
+                    adapter.updateData(messages)
+                    findViewById<RecyclerView>(R.id.rvMessages).scrollToPosition(messages.size - 1)
+                }
+            }
+    }
+
+    private fun sendMessage(text: String) {
+        val uid = auth.currentUser?.uid ?: return
+        val isUrgent = urgentKeywords.any { text.lowercase().contains(it) }
+
+        val messageData = hashMapOf(
+            "senderId" to uid,
+            "messageBody" to text,
+            "isUrgent" to isUrgent,
+            "sentTimestamp" to com.google.firebase.Timestamp.now()
+        )
+
+        db.collection("threads").document(threadId)
+            .collection("messages")
+            .add(messageData)
+            .addOnSuccessListener {
+                db.collection("threads").document(threadId)
+                    .update(
+                        mapOf(
+                            "lastMessagePreview" to text,
+                            "isUrgent" to isUrgent
+                        )
+                    )
+            }
+    }
 }

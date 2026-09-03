@@ -1,4 +1,7 @@
 package com.ntuli.apexledger.ui
 
-class ChatMessage {
-}
+data class ChatMessage(
+    val senderId: String = "",
+    val messageBody: String = "",
+    val isUrgent: Boolean = false
+)
