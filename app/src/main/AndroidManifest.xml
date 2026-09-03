@@ -27,6 +27,24 @@
         <activity
             android:name=".DashboardActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".MessagesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".TicketsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ConversationActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+
+
     </application>
 
 </manifest>
