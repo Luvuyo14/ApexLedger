@@ -9,7 +9,7 @@
         <item name="android:navigationBarColor">@color/white</item>
     </style>
 
-    <style name="Card.Stat">
+    <style name="CardStatStyle">
         <item name="cardCornerRadius">14dp</item>
         <item name="cardElevation">2dp</item>
         <item name="strokeColor">@color/gray_200</item>
@@ -17,13 +17,13 @@
         <item name="cardBackgroundColor">@color/white</item>
     </style>
 
-    <style name="Text.Heading">
+    <style name="TextHeadingStyle">
         <item name="android:textColor">@color/navy</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">18sp</item>
     </style>
 
-    <style name="Text.Body">
+    <style name="TextBodyStyle">
         <item name="android:textColor">@color/gray_600</item>
         <item name="android:textSize">14sp</item>
     </style>
