@@ -40,6 +40,11 @@
             android:layout_height="wrap_content"
             android:text="Audit Log" />
 
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="System Health" />
+
     </com.google.android.material.tabs.TabLayout>
 
     <ScrollView
@@ -275,6 +280,69 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvAuditLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- SECTION 4: System Health -->
+            <LinearLayout
+                android:id="@+id/sectionSystemHealth"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <include layout="@layout/item_stat_card" android:id="@+id/statStorageUsed" />
+                    <include layout="@layout/item_stat_card" android:id="@+id/statActiveClientsHealth" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <include layout="@layout/item_stat_card" android:id="@+id/statActiveStaff" />
+                    <include layout="@layout/item_stat_card" android:id="@+id/statDocsPending" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <include layout="@layout/item_stat_card" android:id="@+id/statFailedLogins" />
+                    <include layout="@layout/item_stat_card" android:id="@+id/statAuditEvents" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Service Status"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="10dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvServiceStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false" />

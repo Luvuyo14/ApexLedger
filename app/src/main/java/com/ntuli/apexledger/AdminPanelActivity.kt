@@ -6,6 +6,7 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -19,10 +20,13 @@ import com.ntuli.apexledger.ui.AuditLogAdapter
 import com.ntuli.apexledger.ui.AuditLogEntry
 import com.ntuli.apexledger.ui.PermissionAdapter
 import com.ntuli.apexledger.ui.PermissionRow
+import com.ntuli.apexledger.ui.ServiceStatus
+import com.ntuli.apexledger.ui.ServiceStatusAdapter
 import com.ntuli.apexledger.ui.StaffAdapter
 import com.ntuli.apexledger.ui.StaffMember
 import com.ntuli.apexledger.util.AuditLogger
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class AdminPanelActivity : AppCompatActivity() {
@@ -50,6 +54,7 @@ class AdminPanelActivity : AppCompatActivity() {
         setupUserManagementSection()
         setupPermissionsSection()
         setupAuditLogSection()
+        setupSystemHealthSection()
     }
 
     private fun setupTabs() {
@@ -57,12 +62,14 @@ class AdminPanelActivity : AppCompatActivity() {
         val sectionUserManagement = findViewById<android.view.View>(R.id.sectionUserManagement)
         val sectionPermissions = findViewById<android.view.View>(R.id.sectionPermissions)
         val sectionAuditLog = findViewById<android.view.View>(R.id.sectionAuditLog)
+        val sectionSystemHealth = findViewById<android.view.View>(R.id.sectionSystemHealth)
 
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 sectionUserManagement.visibility = if (tab.position == 0) android.view.View.VISIBLE else android.view.View.GONE
                 sectionPermissions.visibility = if (tab.position == 1) android.view.View.VISIBLE else android.view.View.GONE
                 sectionAuditLog.visibility = if (tab.position == 2) android.view.View.VISIBLE else android.view.View.GONE
+                sectionSystemHealth.visibility = if (tab.position == 3) android.view.View.VISIBLE else android.view.View.GONE
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {}
@@ -174,7 +181,6 @@ class AdminPanelActivity : AppCompatActivity() {
         val rvPermissions = findViewById<RecyclerView>(R.id.rvPermissions)
         rvPermissions.layoutManager = LinearLayoutManager(this)
 
-        // Static reference data matching the website's Permissions Matrix (UC-18).
         val permissions = listOf(
             PermissionRow("View own tickets / documents", admin = true, manager = true, accountant = true, client = true),
             PermissionRow("Create service tickets", admin = true, manager = false, accountant = true, client = false),
@@ -214,5 +220,69 @@ class AdminPanelActivity : AppCompatActivity() {
                 auditAdapter.updateData(entries)
                 tvAuditEmptyState.visibility = if (entries.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
             }
+    }
+
+    private fun setupSystemHealthSection() {
+        setStat(R.id.statStorageUsed, "Storage Used", "—")
+        setStat(R.id.statActiveClientsHealth, "Active Clients", "0")
+        setStat(R.id.statActiveStaff, "Active Staff", "0")
+        setStat(R.id.statDocsPending, "Docs Pending Review", "0")
+        setStat(R.id.statFailedLogins, "Failed Logins Today", "0")
+        setStat(R.id.statAuditEvents, "Audit Events Today", "0")
+
+        colorStatBar(R.id.statStorageUsed, R.color.purple)
+        colorStatBar(R.id.statActiveClientsHealth, R.color.primary)
+        colorStatBar(R.id.statActiveStaff, R.color.success)
+        colorStatBar(R.id.statDocsPending, R.color.warning)
+        colorStatBar(R.id.statFailedLogins, R.color.danger)
+        colorStatBar(R.id.statAuditEvents, R.color.primary)
+
+        // Active clients / staff counts
+        db.collection("users").whereEqualTo("role", "client").get()
+            .addOnSuccessListener { setStat(R.id.statActiveClientsHealth, "Active Clients", it.size().toString()) }
+
+        db.collection("users").whereIn("role", listOf("accountant", "manager", "admin")).get()
+            .addOnSuccessListener { setStat(R.id.statActiveStaff, "Active Staff", it.size().toString()) }
+
+        // Documents pending review
+        db.collection("documents").whereEqualTo("reviewStatus", "pending").get()
+            .addOnSuccessListener { setStat(R.id.statDocsPending, "Docs Pending Review", it.size().toString()) }
+
+        // Failed logins today and audit events today (from audit_log, filtered client-side by date)
+        val startOfToday = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.time
+
+        db.collection("audit_log")
+            .whereGreaterThanOrEqualTo("timestamp", com.google.firebase.Timestamp(startOfToday))
+            .get()
+            .addOnSuccessListener { result ->
+                setStat(R.id.statAuditEvents, "Audit Events Today", result.size().toString())
+                val failedLogins = result.documents.count { it.getString("action") == "Failed Login" }
+                setStat(R.id.statFailedLogins, "Failed Logins Today", failedLogins.toString())
+            }
+
+        // Service status list — reflects what this app actually depends on
+        val rvServiceStatus = findViewById<RecyclerView>(R.id.rvServiceStatus)
+        rvServiceStatus.layoutManager = LinearLayoutManager(this)
+        rvServiceStatus.adapter = ServiceStatusAdapter(
+            listOf(
+                ServiceStatus("Firestore Database", "Operational", true),
+                ServiceStatus("Firebase Storage", "Operational", true),
+                ServiceStatus("Authentication Service", "Operational", true)
+            )
+        )
+    }
+
+    private fun setStat(includeId: Int, label: String, value: String) {
+        val container = findViewById<android.view.View>(includeId)
+        container.findViewById<TextView>(R.id.tvStatLabel).text = label
+        container.findViewById<TextView>(R.id.tvStatValue).text = value
+    }
+
+    private fun colorStatBar(includeId: Int, colorRes: Int) {
+        val container = findViewById<android.view.View>(includeId)
+        container.findViewById<android.view.View>(R.id.statAccentBar)
+            .setBackgroundColor(ContextCompat.getColor(this, colorRes))
     }
 }

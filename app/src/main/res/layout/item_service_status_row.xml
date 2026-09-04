@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <View
+            android:id="@+id/statusDot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/badge_status_completed"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvServiceName"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Service name"
+            android:textColor="@color/navy"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvServiceStatusLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Operational"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/success_dark"
+            android:background="@drawable/badge_status_completed"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/gray_200"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>
