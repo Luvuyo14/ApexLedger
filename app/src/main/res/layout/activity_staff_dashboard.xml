@@ -90,6 +90,16 @@
     </ScrollView>
 
     <Button
+        android:id="@+id/btnViewAllTickets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View All Tickets"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/primary"
+        android:textColor="@color/white"
+        android:layout_marginTop="12dp" />
+
+    <Button
         android:id="@+id/btnAdminPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

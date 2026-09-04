@@ -52,6 +52,10 @@
             android:name=".RegisterActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".StaffTicketsActivity"
+            android:exported="false" />
+
 
     </application>
 

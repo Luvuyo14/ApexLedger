@@ -70,6 +70,11 @@ class StaffDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, AdminPanelActivity::class.java))
         }
 
+        val btnViewAllTickets = findViewById<Button>(R.id.btnViewAllTickets)
+        btnViewAllTickets.setOnClickListener {
+            startActivity(Intent(this, StaffTicketsActivity::class.java))
+        }
+
 
 
         loadAccountantsCount()
