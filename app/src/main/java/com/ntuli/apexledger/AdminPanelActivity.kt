@@ -10,17 +10,26 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.tabs.TabLayout
 import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.ntuli.apexledger.ui.AuditLogAdapter
+import com.ntuli.apexledger.ui.AuditLogEntry
+import com.ntuli.apexledger.ui.PermissionAdapter
+import com.ntuli.apexledger.ui.PermissionRow
 import com.ntuli.apexledger.ui.StaffAdapter
 import com.ntuli.apexledger.ui.StaffMember
+import com.ntuli.apexledger.util.AuditLogger
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class AdminPanelActivity : AppCompatActivity() {
 
     private lateinit var db: FirebaseFirestore
-    private lateinit var adapter: StaffAdapter
+    private lateinit var staffAdapter: StaffAdapter
+    private lateinit var auditAdapter: AuditLogAdapter
 
     private val roles = listOf("accountant", "manager", "admin")
     private val departments = listOf(
@@ -37,6 +46,31 @@ class AdminPanelActivity : AppCompatActivity() {
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
 
+        setupTabs()
+        setupUserManagementSection()
+        setupPermissionsSection()
+        setupAuditLogSection()
+    }
+
+    private fun setupTabs() {
+        val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
+        val sectionUserManagement = findViewById<android.view.View>(R.id.sectionUserManagement)
+        val sectionPermissions = findViewById<android.view.View>(R.id.sectionPermissions)
+        val sectionAuditLog = findViewById<android.view.View>(R.id.sectionAuditLog)
+
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                sectionUserManagement.visibility = if (tab.position == 0) android.view.View.VISIBLE else android.view.View.GONE
+                sectionPermissions.visibility = if (tab.position == 1) android.view.View.VISIBLE else android.view.View.GONE
+                sectionAuditLog.visibility = if (tab.position == 2) android.view.View.VISIBLE else android.view.View.GONE
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+    }
+
+    private fun setupUserManagementSection() {
         val etStaffName = findViewById<EditText>(R.id.etStaffName)
         val etStaffEmail = findViewById<EditText>(R.id.etStaffEmail)
         val etStaffPassword = findViewById<EditText>(R.id.etStaffPassword)
@@ -49,9 +83,9 @@ class AdminPanelActivity : AppCompatActivity() {
         spinnerRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles)
         spinnerDepartment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, departments)
 
-        adapter = StaffAdapter(emptyList())
+        staffAdapter = StaffAdapter(emptyList())
         rvStaff.layoutManager = LinearLayoutManager(this)
-        rvStaff.adapter = adapter
+        rvStaff.adapter = staffAdapter
 
         loadStaffList()
 
@@ -71,13 +105,6 @@ class AdminPanelActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Creates a new staff Firebase Auth account WITHOUT switching the current
-     * admin's session. We do this by spinning up a temporary secondary
-     * FirebaseApp instance, using it only for this one signup call, then
-     * discarding it. The admin's own FirebaseAuth.getInstance() session
-     * (tied to the default FirebaseApp) is never touched.
-     */
     private fun createStaffAccount(
         name: String, email: String, password: String,
         role: String, department: String, tvStatus: TextView
@@ -108,6 +135,7 @@ class AdminPanelActivity : AppCompatActivity() {
                     .addOnSuccessListener {
                         tvStatus.setTextColor(0xFF2E7D32.toInt())
                         tvStatus.text = "Staff account created for $name"
+                        AuditLogger.logEvent("Admin", "Create Staff Account", "Created $role account for $name ($email)")
                         loadStaffList()
                     }
                     .addOnFailureListener { e ->
@@ -115,7 +143,6 @@ class AdminPanelActivity : AppCompatActivity() {
                         tvStatus.text = "Profile save failed: ${e.message}"
                     }
 
-                // Sign out of the secondary app's session immediately, then clean it up.
                 secondaryAuth.signOut()
                 secondaryApp.delete()
             }
@@ -139,7 +166,53 @@ class AdminPanelActivity : AppCompatActivity() {
                         role = d.getString("role") ?: "accountant"
                     )
                 }
-                adapter.updateData(staff)
+                staffAdapter.updateData(staff)
+            }
+    }
+
+    private fun setupPermissionsSection() {
+        val rvPermissions = findViewById<RecyclerView>(R.id.rvPermissions)
+        rvPermissions.layoutManager = LinearLayoutManager(this)
+
+        // Static reference data matching the website's Permissions Matrix (UC-18).
+        val permissions = listOf(
+            PermissionRow("View own tickets / documents", admin = true, manager = true, accountant = true, client = true),
+            PermissionRow("Create service tickets", admin = true, manager = false, accountant = true, client = false),
+            PermissionRow("Update ticket status", admin = true, manager = true, accountant = true, client = false),
+            PermissionRow("Upload documents", admin = true, manager = false, accountant = true, client = true),
+            PermissionRow("Review / approve documents", admin = true, manager = true, accountant = true, client = false),
+            PermissionRow("Send secure messages", admin = true, manager = true, accountant = true, client = true),
+            PermissionRow("View management reports", admin = true, manager = true, accountant = false, client = false)
+        )
+
+        rvPermissions.adapter = PermissionAdapter(permissions)
+    }
+
+    private fun setupAuditLogSection() {
+        val rvAuditLog = findViewById<RecyclerView>(R.id.rvAuditLog)
+        val tvAuditEmptyState = findViewById<TextView>(R.id.tvAuditEmptyState)
+        rvAuditLog.layoutManager = LinearLayoutManager(this)
+        auditAdapter = AuditLogAdapter(emptyList())
+        rvAuditLog.adapter = auditAdapter
+
+        val sdf = SimpleDateFormat("dd MMM HH:mm", Locale.getDefault())
+
+        db.collection("audit_log")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(40)
+            .get()
+            .addOnSuccessListener { result ->
+                val entries = result.documents.map { d ->
+                    val ts = d.getTimestamp("timestamp")
+                    AuditLogEntry(
+                        userType = d.getString("userType") ?: "User",
+                        action = d.getString("action") ?: "",
+                        details = d.getString("details") ?: "",
+                        timestampLabel = ts?.toDate()?.let { sdf.format(it) } ?: ""
+                    )
+                }
+                auditAdapter.updateData(entries)
+                tvAuditEmptyState.visibility = if (entries.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
             }
     }
 }

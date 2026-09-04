@@ -127,6 +127,9 @@ class DashboardActivity : AppCompatActivity() {
                 R.id.nav_tickets -> startActivity(Intent(this, TicketsActivity::class.java))
                 R.id.nav_profile -> startActivity(Intent(this, ProfileActivity::class.java))
                 R.id.nav_logout -> {
+
+                    com.ntuli.apexledger.util.AuditLogger.logEvent("Client", "Logout", "Manual logout")
+
                     auth.signOut()
                     startActivity(Intent(this, MainActivity::class.java))
                     finish()

@@ -1,151 +1,289 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/gray_50"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:background="@color/gray_50">
 
-    <LinearLayout
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/white"
+        app:titleTextColor="@color/navy"
+        app:navigationIcon="@drawable/ic_back_arrow"
+        app:title="Admin Panel" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:background="@color/white"
+        app:tabTextColor="@color/gray_500"
+        app:tabSelectedTextColor="@color/primary"
+        app:tabIndicatorColor="@color/primary"
+        app:tabMode="scrollable">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/white"
-            app:titleTextColor="@color/navy"
-            app:navigationIcon="@drawable/ic_back_arrow"
-            app:title="Admin Panel" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:text="User Management" />
 
-            <!-- Create staff card -->
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Permissions" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Audit Log" />
+
+    </com.google.android.material.tabs.TabLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- SECTION 1: User Management -->
             <LinearLayout
+                android:id="@+id/sectionUserManagement"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/bg_card_stroke"
                 android:padding="16dp"
-                android:layout_marginBottom="16dp">
+                android:visibility="visible">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Staff Accounts"
-                    android:textColor="@color/navy"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="12dp" />
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp">
 
-                <TextView android:text="Full Name" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                <EditText
-                    android:id="@+id/etStaffName"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Staff Accounts"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView android:text="Full Name" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <EditText
+                        android:id="@+id/etStaffName"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp" android:paddingEnd="14dp"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                    <TextView android:text="Email" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <EditText
+                        android:id="@+id/etStaffEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp" android:paddingEnd="14dp"
+                        android:inputType="textEmailAddress"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                    <TextView android:text="Temporary Password" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <EditText
+                        android:id="@+id/etStaffPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp" android:paddingEnd="14dp"
+                        android:inputType="textPassword"
+                        android:hint="Min 8 chars"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                    <TextView android:text="Role" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <Spinner
+                        android:id="@+id/spinnerRole"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+
+                    <TextView android:text="Duty / Department" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <Spinner
+                        android:id="@+id/spinnerDepartment"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:layout_marginTop="4dp" android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Every accountant owns one duty. Client queries about that duty are routed to them directly."
+                        android:textColor="@color/gray_400"
+                        android:textSize="10sp"
+                        android:layout_marginBottom="14dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCreateStaff"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Create User"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:backgroundTint="@color/success" />
+
+                    <TextView
+                        android:id="@+id/tvStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="12dp"
+                        android:textColor="@color/danger_dark"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
-                    android:paddingStart="14dp" android:paddingEnd="14dp"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
-
-                <TextView android:text="Email" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                <EditText
-                    android:id="@+id/etStaffEmail"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
-                    android:paddingStart="14dp" android:paddingEnd="14dp"
-                    android:inputType="textEmailAddress"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
-
-                <TextView android:text="Temporary Password" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                <EditText
-                    android:id="@+id/etStaffPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
-                    android:paddingStart="14dp" android:paddingEnd="14dp"
-                    android:inputType="textPassword"
-                    android:hint="Min 8 chars"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
-
-                <TextView android:text="Role" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                <Spinner
-                    android:id="@+id/spinnerRole"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
-
-                <TextView android:text="Duty / Department" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                <Spinner
-                    android:id="@+id/spinnerDepartment"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="6dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Every accountant owns one duty. Client queries about that duty are routed to them directly."
-                    android:textColor="@color/gray_400"
-                    android:textSize="10sp"
-                    android:layout_marginBottom="14dp" />
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCreateStaff"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:text="Create User"
-                    android:textAllCaps="false"
-                    android:textStyle="bold"
-                    android:backgroundTint="@color/success" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="All Staff"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="8dp" />
 
-                <TextView
-                    android:id="@+id/tvStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="12dp"
-                    android:textColor="@color/danger_dark"
-                    android:textSize="13sp" />
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvStaff"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
-            <!-- Staff list card -->
+            <!-- SECTION 2: Permissions Matrix -->
             <LinearLayout
+                android:id="@+id/sectionPermissions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/bg_card_stroke"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:visibility="gone">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="All Staff"
-                    android:textColor="@color/navy"
-                    android:textStyle="bold"
-                    android:textSize="15sp"
-                    android:layout_marginBottom="8dp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvStaff"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false" />
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Permissions Matrix"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Role-based access control. Client queries route straight to the responsible accountant by duty — Admin is not a required step in that path."
+                        android:textColor="@color/gray_500"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvPermissions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
-        </LinearLayout>
-    </LinearLayout>
-</ScrollView>
+            <!-- SECTION 3: Audit Log -->
+            <LinearLayout
+                android:id="@+id/sectionAuditLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Audit Log"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Last 40 events"
+                            android:textColor="@color/gray_400"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvAuditEmptyState"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No audit events recorded yet"
+                        android:textColor="@color/gray_500"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:padding="24dp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvAuditLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </FrameLayout>
+    </ScrollView>
+
+</LinearLayout>

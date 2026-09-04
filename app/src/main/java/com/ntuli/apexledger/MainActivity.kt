@@ -53,6 +53,10 @@ class MainActivity : AppCompatActivity() {
                             } else {
                                 StaffDashboardActivity::class.java
                             }
+                            val role = doc.getString("role") ?: "client"
+                            com.ntuli.apexledger.util.AuditLogger.logEvent(
+                                if (role == "client") "Client" else "User", "Login"
+                            )
                             startActivity(Intent(this, destination))
                             finish()
                         }
