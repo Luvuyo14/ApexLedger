@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.ntuli.apexledger.util.AuditLogger
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,15 +49,16 @@ class MainActivity : AppCompatActivity() {
                     db.collection("users").document(uid).get()
                         .addOnSuccessListener { doc ->
                             val role = doc.getString("role") ?: "client"
+
+                            AuditLogger.logEvent(
+                                if (role == "client") "Client" else "User", "Login"
+                            )
+
                             val destination = if (role == "client") {
                                 DashboardActivity::class.java
                             } else {
                                 StaffDashboardActivity::class.java
                             }
-                            val role = doc.getString("role") ?: "client"
-                            com.ntuli.apexledger.util.AuditLogger.logEvent(
-                                if (role == "client") "Client" else "User", "Login"
-                            )
                             startActivity(Intent(this, destination))
                             finish()
                         }
