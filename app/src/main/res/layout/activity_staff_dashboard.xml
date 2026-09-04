@@ -120,6 +120,17 @@
         android:layout_marginTop="8dp" />
 
     <Button
+        android:id="@+id/btnReports"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Manager Reports"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/gray_600"
+        android:textColor="@color/white"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <Button
         android:id="@+id/btnAdminPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -64,6 +64,7 @@ class StaffDashboardActivity : AppCompatActivity() {
                 .addOnSuccessListener { doc ->
                     val role = doc.getString("role") ?: "accountant"
                     btnAdminPanel.visibility = if (role == "admin") android.view.View.VISIBLE else android.view.View.GONE
+                    btnReports.visibility = if (role == "admin" || role == "manager") android.view.View.VISIBLE else android.view.View.GONE
                 }
         }
         btnAdminPanel.setOnClickListener {
@@ -85,9 +86,10 @@ class StaffDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, StaffMessagesActivity::class.java))
         }
 
-
-
-
+        val btnReports = findViewById<Button>(R.id.btnReports)
+        btnReports.setOnClickListener {
+            startActivity(Intent(this, ReportsActivity::class.java))
+        }
 
         loadAccountantsCount()
         loadAssignedClientsAndTickets()

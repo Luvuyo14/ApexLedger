@@ -56,7 +56,9 @@
             android:name=".StaffMessagesActivity"
             android:exported="false" />
 
-
+        <activity
+            android:name=".ReportsActivity"
+            android:exported="false" />
 
         <activity
             android:name=".StaffDocumentsActivity"
