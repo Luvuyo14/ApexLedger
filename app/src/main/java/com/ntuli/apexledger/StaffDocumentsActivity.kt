@@ -1,0 +1,142 @@
+package com.ntuli.apexledger
+
+import android.os.Bundle
+import android.widget.ArrayAdapter
+import android.widget.AdapterView
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.ntuli.apexledger.ui.Document
+import com.ntuli.apexledger.ui.StaffDocumentAdapter
+import com.ntuli.apexledger.util.AuditLogger
+
+class StaffDocumentsActivity : AppCompatActivity() {
+
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
+    private lateinit var adapter: StaffDocumentAdapter
+
+    private val statusFilterOptions = listOf("All statuses", "pending", "under_review", "approved", "rejected")
+    private var allDocuments: List<Document> = emptyList()
+    private var selectedFilter = "All statuses"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_staff_documents)
+
+        auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
+
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar.setNavigationOnClickListener { finish() }
+
+        val rv = findViewById<RecyclerView>(R.id.rvStaffDocuments)
+        val tvEmptyState = findViewById<TextView>(R.id.tvEmptyState)
+        val spinnerFilterStatus = findViewById<Spinner>(R.id.spinnerFilterStatus)
+
+        adapter = StaffDocumentAdapter(
+            emptyList(),
+            onApprove = { doc -> updateReviewStatus(doc, "approved") },
+            onReject = { doc -> updateReviewStatus(doc, "rejected") }
+        )
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = adapter
+
+        spinnerFilterStatus.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item,
+            statusFilterOptions.map { if (it == "All statuses") it else it.replace("_", " ").replaceFirstChar { c -> c.uppercase() } }
+        )
+        spinnerFilterStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                selectedFilter = statusFilterOptions[pos]
+                applyFilter(tvEmptyState)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        loadAssignedDocuments(tvEmptyState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadAssignedDocuments(findViewById(R.id.tvEmptyState))
+    }
+
+    private fun loadAssignedDocuments(tvEmptyState: TextView) {
+        val uid = auth.currentUser?.uid ?: return
+
+        db.collection("users")
+            .whereEqualTo("assignedAccountantId", uid)
+            .get()
+            .addOnSuccessListener { clientsResult ->
+                val clientDocs = clientsResult.documents
+                val clientIds = clientDocs.map { it.id }
+                val clientNames = clientDocs.associate { it.id to (it.getString("full_name") ?: "Unknown client") }
+
+                if (clientIds.isEmpty()) {
+                    allDocuments = emptyList()
+                    applyFilter(tvEmptyState)
+                    return@addOnSuccessListener
+                }
+
+                val batches = clientIds.chunked(10)
+                val fetched = mutableListOf<Document>()
+                var completedBatches = 0
+
+                for (batch in batches) {
+                    db.collection("documents")
+                        .whereIn("clientId", batch)
+                        .get()
+                        .addOnSuccessListener { result ->
+                            val docs = result.documents.map { d ->
+                                Document(
+                                    documentId = d.id,
+                                    fileName = d.getString("fileName") ?: "Untitled",
+                                    documentCategory = d.getString("documentCategory") ?: "other",
+                                    reviewStatus = d.getString("reviewStatus") ?: "pending",
+                                    clientName = clientNames[d.getString("clientId")] ?: "Unknown client"
+                                )
+                            }
+                            fetched.addAll(docs)
+                            completedBatches++
+                            if (completedBatches == batches.size) {
+                                allDocuments = fetched
+                                applyFilter(tvEmptyState)
+                            }
+                        }
+                }
+            }
+    }
+
+    private fun applyFilter(tvEmptyState: TextView) {
+        val filtered = if (selectedFilter == "All statuses") {
+            allDocuments
+        } else {
+            allDocuments.filter { it.reviewStatus == selectedFilter }
+        }
+        adapter.updateData(filtered)
+        tvEmptyState.visibility = if (filtered.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
+    private fun updateReviewStatus(doc: Document, newStatus: String) {
+        db.collection("documents").document(doc.documentId)
+            .update("reviewStatus", newStatus)
+            .addOnSuccessListener {
+                Toast.makeText(this, "${doc.fileName} marked $newStatus", Toast.LENGTH_SHORT).show()
+                AuditLogger.logEvent(
+                    "User", "Document Review",
+                    "${doc.fileName} → $newStatus (client: ${doc.clientName})"
+                )
+                loadAssignedDocuments(findViewById(R.id.tvEmptyState))
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to update: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    }
+}

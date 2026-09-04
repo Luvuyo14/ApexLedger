@@ -75,6 +75,11 @@ class StaffDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, StaffTicketsActivity::class.java))
         }
 
+        val btnReviewDocuments = findViewById<Button>(R.id.btnReviewDocuments)
+        btnReviewDocuments.setOnClickListener {
+            startActivity(Intent(this, StaffDocumentsActivity::class.java))
+        }
+
 
 
         loadAccountantsCount()

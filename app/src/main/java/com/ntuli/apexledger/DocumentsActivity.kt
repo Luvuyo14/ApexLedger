@@ -90,10 +90,11 @@ class DocumentsActivity : AppCompatActivity() {
             .addOnSuccessListener { result ->
                 val docs = result.documents.map { d ->
                     Document(
-                        fileName = d.getString("fileName") ?: "Untitled",
-                        documentCategory = d.getString("documentCategory") ?: "other",
-                        reviewStatus = d.getString("reviewStatus") ?: "pending"
-                    )
+                    documentId = d.id,
+                    fileName = d.getString("fileName") ?: "Untitled",
+                    documentCategory = d.getString("documentCategory") ?: "other",
+                    reviewStatus = d.getString("reviewStatus") ?: "pending"
+                )
                 }
                 adapter.updateData(docs)
                 tvEmptyState.visibility = if (docs.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE

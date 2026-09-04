@@ -53,6 +53,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".StaffDocumentsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".StaffTicketsActivity"
             android:exported="false" />
 
