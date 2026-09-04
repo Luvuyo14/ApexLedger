@@ -58,6 +58,20 @@ class StaffDashboardActivity : AppCompatActivity() {
                 }
         }
 
+        val btnAdminPanel = findViewById<Button>(R.id.btnAdminPanel)
+        if (uid != null) {
+            db.collection("users").document(uid).get()
+                .addOnSuccessListener { doc ->
+                    val role = doc.getString("role") ?: "accountant"
+                    btnAdminPanel.visibility = if (role == "admin") android.view.View.VISIBLE else android.view.View.GONE
+                }
+        }
+        btnAdminPanel.setOnClickListener {
+            startActivity(Intent(this, AdminPanelActivity::class.java))
+        }
+
+
+
         loadAccountantsCount()
         loadAssignedClientsAndTickets()
 
