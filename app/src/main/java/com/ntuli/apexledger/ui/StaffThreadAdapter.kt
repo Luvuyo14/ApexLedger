@@ -1,0 +1,43 @@
+package com.ntuli.apexledger.ui
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.ntuli.apexledger.R
+
+class StaffThreadAdapter(
+    private var items: List<MessageThread>,
+    private val onClick: (MessageThread) -> Unit
+) : RecyclerView.Adapter<StaffThreadAdapter.StaffThreadViewHolder>() {
+
+    class StaffThreadViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvSubject: TextView = view.findViewById(R.id.tvThreadSubject)
+        val tvClient: TextView = view.findViewById(R.id.tvClientName)
+        val tvPreview: TextView = view.findViewById(R.id.tvThreadPreview)
+        val tvUrgent: TextView = view.findViewById(R.id.tvUrgentPill)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StaffThreadViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_thread_staff_row, parent, false)
+        return StaffThreadViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: StaffThreadViewHolder, position: Int) {
+        val thread = items[position]
+        holder.tvSubject.text = thread.subject
+        holder.tvClient.text = "with ${thread.clientName.ifEmpty { "Unknown client" }}"
+        holder.tvPreview.text = thread.lastMessagePreview
+        holder.tvUrgent.visibility = if (thread.isUrgent) View.VISIBLE else View.GONE
+        holder.itemView.setOnClickListener { onClick(thread) }
+    }
+
+    override fun getItemCount() = items.size
+
+    fun updateData(newItems: List<MessageThread>) {
+        items = newItems
+        notifyDataSetChanged()
+    }
+}

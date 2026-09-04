@@ -110,6 +110,16 @@
         android:layout_marginTop="8dp" />
 
     <Button
+        android:id="@+id/btnClientMessages"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Client Messages"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/primary"
+        android:textColor="@color/white"
+        android:layout_marginTop="8dp" />
+
+    <Button
         android:id="@+id/btnAdminPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

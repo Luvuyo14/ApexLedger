@@ -80,6 +80,13 @@ class StaffDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, StaffDocumentsActivity::class.java))
         }
 
+        val btnClientMessages = findViewById<Button>(R.id.btnClientMessages)
+        btnClientMessages.setOnClickListener {
+            startActivity(Intent(this, StaffMessagesActivity::class.java))
+        }
+
+
+
 
 
         loadAccountantsCount()
