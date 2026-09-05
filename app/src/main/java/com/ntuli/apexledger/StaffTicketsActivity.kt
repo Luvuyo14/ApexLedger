@@ -1,5 +1,6 @@
 package com.ntuli.apexledger
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.AdapterView
@@ -15,6 +16,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.StaffTicketAdapter
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.util.AuditLogger
+import java.util.Calendar
 
 class StaffTicketsActivity : AppCompatActivity() {
 
@@ -45,9 +47,12 @@ class StaffTicketsActivity : AppCompatActivity() {
         val spinnerFilterStatus = findViewById<Spinner>(R.id.spinnerFilterStatus)
         val spinnerFilterPriority = findViewById<Spinner>(R.id.spinnerFilterPriority)
 
-        adapter = StaffTicketAdapter(emptyList(), statusOptions) { ticket, newStatus ->
-            updateTicketStatus(ticket, newStatus)
-        }
+        adapter = StaffTicketAdapter(
+            emptyList(),
+            statusOptions,
+            onStatusChanged = { ticket, newStatus -> updateTicketStatus(ticket, newStatus) },
+            onSetDueDate = { ticket -> showDatePicker(ticket) }
+        )
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
@@ -152,6 +157,36 @@ class StaffTicketsActivity : AppCompatActivity() {
                 AuditLogger.logEvent(
                     "User", "Update Ticket Status",
                     "${ticket.ticketNumber} → $newStatus (client: ${ticket.clientName})"
+                )
+                loadAssignedTickets(findViewById(R.id.tvEmptyState))
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to update: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun showDatePicker(ticket: Ticket) {
+        val calendar = Calendar.getInstance()
+        DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                val formatted = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                updateTicketDueDate(ticket, formatted)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    private fun updateTicketDueDate(ticket: Ticket, dueDate: String) {
+        db.collection("tickets").document(ticket.ticketId)
+            .update("dueDate", dueDate)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Due date set to $dueDate", Toast.LENGTH_SHORT).show()
+                AuditLogger.logEvent(
+                    "User", "Set Ticket Due Date",
+                    "${ticket.ticketNumber} → $dueDate (client: ${ticket.clientName})"
                 )
                 loadAssignedTickets(findViewById(R.id.tvEmptyState))
             }

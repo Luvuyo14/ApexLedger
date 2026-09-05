@@ -13,7 +13,8 @@ import com.ntuli.apexledger.R
 class StaffTicketAdapter(
     private var items: List<Ticket>,
     private val statusOptions: List<String>,
-    private val onStatusChanged: (Ticket, String) -> Unit
+    private val onStatusChanged: (Ticket, String) -> Unit,
+    private val onSetDueDate: (Ticket) -> Unit
 ) : RecyclerView.Adapter<StaffTicketAdapter.StaffTicketViewHolder>() {
 
     inner class StaffTicketViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -21,6 +22,7 @@ class StaffTicketAdapter(
         val tvClient: TextView = view.findViewById(R.id.tvClientName)
         val tvService: TextView = view.findViewById(R.id.tvServiceType)
         val tvDueDate: TextView = view.findViewById(R.id.tvDueDate)
+        val btnSetDueDate: TextView = view.findViewById(R.id.btnSetDueDate)
         val tvPriority: TextView = view.findViewById(R.id.tvPriorityBadge)
         val spinnerStatus: Spinner = view.findViewById(R.id.spinnerStatus)
     }
@@ -39,6 +41,8 @@ class StaffTicketAdapter(
         holder.tvDueDate.text = if (ticket.dueDate.isNotEmpty()) "Due ${ticket.dueDate}" else "No due date set"
         holder.tvPriority.text = ticket.priority.replaceFirstChar { it.uppercase() }
 
+        holder.btnSetDueDate.setOnClickListener { onSetDueDate(ticket) }
+
         val priorityBadge = when (ticket.priority) {
             "high" -> R.drawable.badge_status_overdue
             "low" -> R.drawable.badge_status_completed
@@ -56,7 +60,6 @@ class StaffTicketAdapter(
         val currentIndex = statusOptions.indexOf(ticket.status).let { if (it >= 0) it else 0 }
         holder.spinnerStatus.setSelection(currentIndex, false)
 
-        // Avoid firing the listener on initial bind/setSelection by tracking position
         holder.spinnerStatus.onItemSelectedListener = null
         holder.spinnerStatus.post {
             holder.spinnerStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

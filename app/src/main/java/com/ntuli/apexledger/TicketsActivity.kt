@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
+import com.ntuli.apexledger.util.AuditLogger
 
 class TicketsActivity : AppCompatActivity() {
 
@@ -26,6 +27,7 @@ class TicketsActivity : AppCompatActivity() {
     private lateinit var adapter: TicketAdapter
 
     private val serviceTypes = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit")
+    private val priorities = listOf("low", "medium", "high")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,18 +83,28 @@ class TicketsActivity : AppCompatActivity() {
 
     private fun showNewTicketDialog() {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_new_ticket, null)
-        val spinner = view.findViewById<Spinner>(R.id.spinnerServiceType)
+        val spinnerServiceType = view.findViewById<Spinner>(R.id.spinnerServiceType)
+        val spinnerPriority = view.findViewById<Spinner>(R.id.spinnerPriority)
         val etDescription = view.findViewById<EditText>(R.id.etDescription)
 
-        spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, serviceTypes)
+        spinnerServiceType.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item,
+            serviceTypes.map { it.replace("_", " ").replaceFirstChar { c -> c.uppercase() } }
+        )
+        spinnerPriority.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item,
+            priorities.map { it.replaceFirstChar { c -> c.uppercase() } }
+        )
+        spinnerPriority.setSelection(priorities.indexOf("medium"))
 
         AlertDialog.Builder(this)
             .setView(view)
             .setPositiveButton("Create") { _, _ ->
-                val serviceType = serviceTypes[spinner.selectedItemPosition]
+                val serviceType = serviceTypes[spinnerServiceType.selectedItemPosition]
+                val priority = priorities[spinnerPriority.selectedItemPosition]
                 val description = etDescription.text.toString().trim()
                 if (description.isNotEmpty()) {
-                    createTicket(serviceType, description)
+                    createTicket(serviceType, priority, description)
                 } else {
                     Toast.makeText(this, "Please describe your request", Toast.LENGTH_SHORT).show()
                 }
@@ -101,7 +113,7 @@ class TicketsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun createTicket(serviceType: String, description: String) {
+    private fun createTicket(serviceType: String, priority: String, description: String) {
         val uid = auth.currentUser?.uid ?: return
         val ticketNumber = "TCK-${System.currentTimeMillis()}"
 
@@ -109,15 +121,17 @@ class TicketsActivity : AppCompatActivity() {
             "clientId" to uid,
             "ticketNumber" to ticketNumber,
             "serviceType" to serviceType,
-            "priority" to "medium",
+            "priority" to priority,
             "status" to "open",
             "description" to description,
+            "dueDate" to "",
             "createdDate" to com.google.firebase.Timestamp.now()
         )
 
         db.collection("tickets").add(ticketData)
             .addOnSuccessListener {
                 Toast.makeText(this, "Ticket created!", Toast.LENGTH_SHORT).show()
+                AuditLogger.logEvent("Client", "Create Ticket", "$ticketNumber ($serviceType, $priority priority)")
                 loadTickets(findViewById(R.id.tvEmptyState))
             }
             .addOnFailureListener { e ->

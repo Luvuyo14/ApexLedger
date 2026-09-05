@@ -14,11 +14,43 @@
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Service Type"
+        android:textColor="@color/navy_700"
+        android:textStyle="bold"
+        android:textSize="12sp" />
+
     <Spinner
         android:id="@+id/spinnerServiceType"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Priority"
+        android:textColor="@color/navy_700"
+        android:textStyle="bold"
+        android:textSize="12sp" />
+
+    <Spinner
+        android:id="@+id/spinnerPriority"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Description"
+        android:textColor="@color/navy_700"
+        android:textStyle="bold"
+        android:textSize="12sp" />
 
     <EditText
         android:id="@+id/etDescription"
@@ -29,6 +61,7 @@
         android:padding="14dp"
         android:minLines="3"
         android:gravity="top"
-        android:inputType="textMultiLine" />
+        android:inputType="textMultiLine"
+        android:layout_marginTop="4dp" />
 
 </LinearLayout>
