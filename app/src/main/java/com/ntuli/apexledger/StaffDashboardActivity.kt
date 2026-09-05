@@ -15,6 +15,7 @@ import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.DateUtils
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -135,7 +136,6 @@ class StaffDashboardActivity : AppCompatActivity() {
 
                 val batches = clientIds.chunked(10)
                 val allOpenTickets = mutableListOf<Ticket>()
-                var overdueCount = 0
                 var completedBatches = 0
 
                 for (batch in batches) {
@@ -160,16 +160,10 @@ class StaffDashboardActivity : AppCompatActivity() {
                             if (completedBatches == batches.size) {
                                 adapter.updateData(allOpenTickets)
                                 setStat(R.id.statOpenTickets, "Open Tickets", allOpenTickets.size.toString())
-                            }
-                        }
 
-                    db.collection("tickets")
-                        .whereIn("clientId", batch)
-                        .whereEqualTo("status", "overdue")
-                        .get()
-                        .addOnSuccessListener { result ->
-                            overdueCount += result.size()
-                            setStat(R.id.statOverdue, "Overdue", overdueCount.toString())
+                                val overdueCount = allOpenTickets.count { DateUtils.isOverdue(it.dueDate, it.status) }
+                                setStat(R.id.statOverdue, "Overdue", overdueCount.toString())
+                            }
                         }
 
                     db.collection("threads")

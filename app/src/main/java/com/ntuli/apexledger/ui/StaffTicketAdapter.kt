@@ -39,6 +39,13 @@ class StaffTicketAdapter(
         holder.tvClient.text = ticket.clientName.ifEmpty { "Unknown client" }
         holder.tvService.text = ticket.serviceType.replace("_", " ").replaceFirstChar { it.uppercase() }
         holder.tvDueDate.text = if (ticket.dueDate.isNotEmpty()) "Due ${ticket.dueDate}" else "No due date set"
+        if (com.ntuli.apexledger.util.DateUtils.isOverdue(ticket.dueDate, ticket.status)) {
+            holder.tvDueDate.text = "Overdue — was due ${ticket.dueDate}"
+            holder.tvDueDate.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.danger_dark))
+        } else {
+            holder.tvDueDate.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.gray_400))
+        }
+
         holder.tvPriority.text = ticket.priority.replaceFirstChar { it.uppercase() }
 
         holder.btnSetDueDate.setOnClickListener { onSetDueDate(ticket) }

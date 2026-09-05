@@ -17,6 +17,7 @@ import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.DateUtils
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,24 +43,20 @@ class DashboardActivity : AppCompatActivity() {
         val tvRole = findViewById<TextView>(R.id.tvRole)
         val rvRecentTickets = findViewById<RecyclerView>(R.id.rvRecentTickets)
 
-        // Hamburger icon to open drawer
         toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_menu_overflow_material)
         toolbar.setNavigationOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        // Date line, matching website's "Thursday, September 3, 2026"
         val sdf = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
         tvDate.text = sdf.format(Date())
 
-        // Ticket list setup
         ticketAdapter = TicketAdapter(emptyList())
         rvRecentTickets.layoutManager = LinearLayoutManager(this)
         rvRecentTickets.adapter = ticketAdapter
 
         val uid = auth.currentUser?.uid
 
-        // Load user profile
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
@@ -70,41 +67,10 @@ class DashboardActivity : AppCompatActivity() {
                 }
         }
 
-        // Load recent tickets belonging to this user
         if (uid != null) {
-            db.collection("tickets")
-                .whereEqualTo("clientId", uid)
-                .limit(5)
-                .get()
-                .addOnSuccessListener { result ->
-                    val tickets = result.documents.map { doc ->
-                        Ticket(
-                            ticketId = doc.id,
-                            ticketNumber = doc.getString("ticketNumber") ?: doc.id,
-                            serviceType = doc.getString("serviceType") ?: "general",
-                            status = doc.getString("status") ?: "open",
-                            priority = doc.getString("priority") ?: "medium",
-                            description = doc.getString("description") ?: "",
-                            dueDate = doc.getString("dueDate") ?: ""
-                        )
-                    }
-                    ticketAdapter.updateData(tickets)
-                }
-        }
-
-        // Load stat counts
-        if (uid != null) {
+            loadTicketsAndOverdue(uid)
             loadStatCount("documents", "clientId", uid, R.id.statDocuments, "Documents")
-            loadStatCount("tickets", "clientId", uid, R.id.statTickets, "Active Tickets")
             loadUnreadMessagesCount(uid)
-
-            db.collection("tickets")
-                .whereEqualTo("clientId", uid)
-                .whereEqualTo("status", "overdue")
-                .get()
-                .addOnSuccessListener { result ->
-                    setStat(R.id.statOverdue, "Overdue", result.size().toString())
-                }
         }
 
         colorStatBar(R.id.statDocuments, R.color.primary)
@@ -112,7 +78,6 @@ class DashboardActivity : AppCompatActivity() {
         colorStatBar(R.id.statTickets, R.color.success)
         colorStatBar(R.id.statOverdue, R.color.danger)
 
-        // Drawer navigation
         navigationView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> { /* already here */ }
@@ -130,6 +95,31 @@ class DashboardActivity : AppCompatActivity() {
             drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
+    }
+
+    private fun loadTicketsAndOverdue(uid: String) {
+        db.collection("tickets")
+            .whereEqualTo("clientId", uid)
+            .get()
+            .addOnSuccessListener { result ->
+                val allTickets = result.documents.map { doc ->
+                    Ticket(
+                        ticketId = doc.id,
+                        ticketNumber = doc.getString("ticketNumber") ?: doc.id,
+                        serviceType = doc.getString("serviceType") ?: "general",
+                        status = doc.getString("status") ?: "open",
+                        priority = doc.getString("priority") ?: "medium",
+                        description = doc.getString("description") ?: "",
+                        dueDate = doc.getString("dueDate") ?: ""
+                    )
+                }
+
+                ticketAdapter.updateData(allTickets.take(5))
+                setStat(R.id.statTickets, "Active Tickets", allTickets.count { it.status !in listOf("completed", "cancelled") }.toString())
+
+                val overdueCount = allTickets.count { DateUtils.isOverdue(it.dueDate, it.status) }
+                setStat(R.id.statOverdue, "Overdue", overdueCount.toString())
+            }
     }
 
     private fun loadStatCount(collection: String, field: String, uid: String, includeId: Int, label: String) {
