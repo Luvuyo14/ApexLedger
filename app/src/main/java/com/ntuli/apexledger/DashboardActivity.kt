@@ -3,7 +3,6 @@ package com.ntuli.apexledger
 import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
@@ -14,8 +13,10 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
+import com.ntuli.apexledger.util.AuditLogger
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -95,14 +96,7 @@ class DashboardActivity : AppCompatActivity() {
         if (uid != null) {
             loadStatCount("documents", "clientId", uid, R.id.statDocuments, "Documents")
             loadStatCount("tickets", "clientId", uid, R.id.statTickets, "Active Tickets")
-
-            db.collection("messages")
-                .whereEqualTo("recipientId", uid)
-                .whereEqualTo("read", false)
-                .get()
-                .addOnSuccessListener { result ->
-                    setStat(R.id.statMessages, "Unread Messages", result.size().toString())
-                }
+            loadUnreadMessagesCount(uid)
 
             db.collection("tickets")
                 .whereEqualTo("clientId", uid)
@@ -127,9 +121,7 @@ class DashboardActivity : AppCompatActivity() {
                 R.id.nav_tickets -> startActivity(Intent(this, TicketsActivity::class.java))
                 R.id.nav_profile -> startActivity(Intent(this, ProfileActivity::class.java))
                 R.id.nav_logout -> {
-
-                    com.ntuli.apexledger.util.AuditLogger.logEvent("Client", "Logout", "Manual logout")
-
+                    AuditLogger.logEvent("Client", "Logout", "Manual logout")
                     auth.signOut()
                     startActivity(Intent(this, MainActivity::class.java))
                     finish()
@@ -146,6 +138,35 @@ class DashboardActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { result ->
                 setStat(includeId, label, result.size().toString())
+            }
+    }
+
+    private fun loadUnreadMessagesCount(uid: String) {
+        setStat(R.id.statMessages, "Unread Messages", "0")
+        var unreadCount = 0
+
+        db.collection("threads")
+            .whereEqualTo("clientId", uid)
+            .get()
+            .addOnSuccessListener { threadsResult ->
+                for (threadDoc in threadsResult.documents) {
+                    db.collection("threads").document(threadDoc.id)
+                        .collection("messages")
+                        .orderBy("sentTimestamp", Query.Direction.DESCENDING)
+                        .limit(1)
+                        .get()
+                        .addOnSuccessListener { lastMsgResult ->
+                            val lastMsg = lastMsgResult.documents.firstOrNull()
+                            if (lastMsg != null) {
+                                val readBy = lastMsg.get("readBy") as? List<*> ?: emptyList<String>()
+                                val senderId = lastMsg.getString("senderId") ?: ""
+                                if (senderId != uid && uid !in readBy) {
+                                    unreadCount++
+                                    setStat(R.id.statMessages, "Unread Messages", unreadCount.toString())
+                                }
+                            }
+                        }
+                }
             }
     }
 

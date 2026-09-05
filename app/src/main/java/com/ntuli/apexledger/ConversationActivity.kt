@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.ChatMessage
@@ -58,6 +59,8 @@ class ConversationActivity : AppCompatActivity() {
     }
 
     private fun loadMessages() {
+        val uid = auth.currentUser?.uid ?: return
+
         db.collection("threads").document(threadId)
             .collection("messages")
             .orderBy("sentTimestamp", Query.Direction.ASCENDING)
@@ -67,11 +70,21 @@ class ConversationActivity : AppCompatActivity() {
                         ChatMessage(
                             senderId = d.getString("senderId") ?: "",
                             messageBody = d.getString("messageBody") ?: "",
-                            isUrgent = d.getBoolean("isUrgent") ?: false
+                            isUrgent = d.getBoolean("isUrgent") ?: false,
+                            readBy = (d.get("readBy") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                         )
                     }
                     adapter.updateData(messages)
                     findViewById<RecyclerView>(R.id.rvMessages).scrollToPosition(messages.size - 1)
+
+                    // Mark any messages not sent by us as read, so unread counts
+                    // elsewhere in the app (staff dashboard, client dashboard) stay accurate.
+                    for (doc in result.documents) {
+                        val readBy = doc.get("readBy") as? List<*> ?: emptyList<String>()
+                        if (uid !in readBy) {
+                            doc.reference.update("readBy", FieldValue.arrayUnion(uid))
+                        }
+                    }
                 }
             }
     }
@@ -84,6 +97,7 @@ class ConversationActivity : AppCompatActivity() {
             "senderId" to uid,
             "messageBody" to text,
             "isUrgent" to isUrgent,
+            "readBy" to listOf(uid),
             "sentTimestamp" to com.google.firebase.Timestamp.now()
         )
 

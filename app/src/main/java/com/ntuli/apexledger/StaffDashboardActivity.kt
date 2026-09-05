@@ -11,8 +11,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
+import com.ntuli.apexledger.util.AuditLogger
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,6 +24,8 @@ class StaffDashboardActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var adapter: TicketAdapter
+
+    private var unreadCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,7 +101,7 @@ class StaffDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, AdminPanelActivity::class.java))
         }
         btnLogout.setOnClickListener {
-            com.ntuli.apexledger.util.AuditLogger.logEvent("User", "Logout", "Manual logout")
+            AuditLogger.logEvent("User", "Logout", "Manual logout")
             auth.signOut()
             startActivity(Intent(this, MainActivity::class.java))
             finish()
@@ -111,6 +115,8 @@ class StaffDashboardActivity : AppCompatActivity() {
 
     private fun loadAssignedClientsTicketsAndMessages() {
         val uid = auth.currentUser?.uid ?: return
+        unreadCount = 0
+        setStat(R.id.statUnreadMessages, "Unread Messages", "0")
 
         db.collection("users")
             .whereEqualTo("assignedAccountantId", uid)
@@ -130,7 +136,6 @@ class StaffDashboardActivity : AppCompatActivity() {
                 val batches = clientIds.chunked(10)
                 val allOpenTickets = mutableListOf<Ticket>()
                 var overdueCount = 0
-                var unreadCount = 0
                 var completedBatches = 0
 
                 for (batch in batches) {
@@ -171,11 +176,24 @@ class StaffDashboardActivity : AppCompatActivity() {
                         .whereIn("clientId", batch)
                         .get()
                         .addOnSuccessListener { threadsResult ->
-                            // Unread here is approximated as threads with a message and no staff
-                            // reply flagged yet; a proper unread-per-user tracker would need a
-                            // 'readBy' field on messages, which we haven't modeled yet.
-                            unreadCount += threadsResult.size()
-                            setStat(R.id.statUnreadMessages, "Unread Messages", unreadCount.toString())
+                            for (threadDoc in threadsResult.documents) {
+                                db.collection("threads").document(threadDoc.id)
+                                    .collection("messages")
+                                    .orderBy("sentTimestamp", Query.Direction.DESCENDING)
+                                    .limit(1)
+                                    .get()
+                                    .addOnSuccessListener { lastMsgResult ->
+                                        val lastMsg = lastMsgResult.documents.firstOrNull()
+                                        if (lastMsg != null) {
+                                            val readBy = lastMsg.get("readBy") as? List<*> ?: emptyList<String>()
+                                            val senderId = lastMsg.getString("senderId") ?: ""
+                                            if (senderId != auth.currentUser?.uid && auth.currentUser?.uid !in readBy) {
+                                                unreadCount++
+                                                setStat(R.id.statUnreadMessages, "Unread Messages", unreadCount.toString())
+                                            }
+                                        }
+                                    }
+                            }
                         }
                 }
             }
