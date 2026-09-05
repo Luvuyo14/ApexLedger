@@ -2,11 +2,16 @@ package com.ntuli.apexledger
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.MessageThread
@@ -17,6 +22,9 @@ class StaffMessagesActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var adapter: StaffThreadAdapter
+
+    private var assignedClientIds: List<String> = emptyList()
+    private var assignedClientNames: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +38,10 @@ class StaffMessagesActivity : AppCompatActivity() {
 
         val rv = findViewById<RecyclerView>(R.id.rvStaffThreads)
         val tvEmptyState = findViewById<TextView>(R.id.tvEmptyState)
+        val etSubject = findViewById<EditText>(R.id.etSubject)
+        val spinnerClient = findViewById<Spinner>(R.id.spinnerClient)
+        val etNewMessageBody = findViewById<EditText>(R.id.etNewMessageBody)
+        val btnStartConversation = findViewById<MaterialButton>(R.id.btnStartConversation)
 
         adapter = StaffThreadAdapter(emptyList()) { thread ->
             val intent = Intent(this, ConversationActivity::class.java)
@@ -40,12 +52,46 @@ class StaffMessagesActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
+        btnStartConversation.setOnClickListener {
+            val subject = etSubject.text.toString().trim()
+            val firstMessage = etNewMessageBody.text.toString().trim()
+
+            if (subject.isEmpty()) {
+                Toast.makeText(this, "Please enter a subject", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (assignedClientIds.isEmpty()) {
+                Toast.makeText(this, "You have no assigned clients yet", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val selectedClientId = assignedClientIds[spinnerClient.selectedItemPosition]
+            createNewThread(selectedClientId, subject, firstMessage)
+            etSubject.text.clear()
+            etNewMessageBody.text.clear()
+        }
+
+        loadAssignedClientsForSpinner(spinnerClient)
         loadAssignedThreads(tvEmptyState)
     }
 
     override fun onResume() {
         super.onResume()
         loadAssignedThreads(findViewById(R.id.tvEmptyState))
+    }
+
+    private fun loadAssignedClientsForSpinner(spinnerClient: Spinner) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("users")
+            .whereEqualTo("assignedAccountantId", uid)
+            .get()
+            .addOnSuccessListener { result ->
+                assignedClientIds = result.documents.map { it.id }
+                assignedClientNames = result.documents.map { it.getString("full_name") ?: "Unknown client" }
+
+                val displayNames = if (assignedClientNames.isEmpty()) listOf("No assigned clients") else assignedClientNames
+                spinnerClient.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayNames)
+            }
     }
 
     private fun loadAssignedThreads(tvEmptyState: TextView) {
@@ -87,13 +133,43 @@ class StaffMessagesActivity : AppCompatActivity() {
                             fetched.addAll(threads)
                             completedBatches++
                             if (completedBatches == batches.size) {
-                                // Show most recently created/updated threads first isn't tracked
-                                // yet at the thread level, so we keep natural Firestore order here.
                                 adapter.updateData(fetched)
                                 tvEmptyState.visibility = if (fetched.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                             }
                         }
                 }
+            }
+    }
+
+    private fun createNewThread(clientId: String, subject: String, firstMessage: String) {
+        val uid = auth.currentUser?.uid ?: return
+        val urgentKeywords = listOf("urgent", "deadline", "penalty", "asap", "overdue")
+        val isUrgent = urgentKeywords.any { firstMessage.lowercase().contains(it) }
+
+        val threadData = hashMapOf(
+            "clientId" to clientId,
+            "subject" to subject,
+            "lastMessagePreview" to firstMessage,
+            "isUrgent" to isUrgent,
+            "createdDate" to com.google.firebase.Timestamp.now()
+        )
+        db.collection("threads").add(threadData)
+            .addOnSuccessListener { ref ->
+                if (firstMessage.isNotEmpty()) {
+                    val messageData = hashMapOf(
+                        "senderId" to uid,
+                        "messageBody" to firstMessage,
+                        "isUrgent" to isUrgent,
+                        "sentTimestamp" to com.google.firebase.Timestamp.now()
+                    )
+                    db.collection("threads").document(ref.id)
+                        .collection("messages")
+                        .add(messageData)
+                }
+                val intent = Intent(this, ConversationActivity::class.java)
+                intent.putExtra("threadId", ref.id)
+                intent.putExtra("subject", subject)
+                startActivity(intent)
             }
     }
 }

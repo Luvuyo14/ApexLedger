@@ -34,21 +34,42 @@
                 android:textStyle="bold"
                 android:textSize="20sp" />
 
-            <TextView
-                android:id="@+id/tvRole"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/gray_500"
-                android:textSize="13sp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="16dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvDepartmentBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Department"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    android:background="@color/primary_light"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <include layout="@layout/item_stat_card" android:id="@+id/statActiveClients" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statMyClients" />
                 <include layout="@layout/item_stat_card" android:id="@+id/statOpenTickets" />
             </LinearLayout>
 
@@ -57,7 +78,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <include layout="@layout/item_stat_card" android:id="@+id/statAccountants" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statUnreadMessages" />
                 <include layout="@layout/item_stat_card" android:id="@+id/statOverdue" />
             </LinearLayout>
 
@@ -86,61 +107,60 @@
 
             </LinearLayout>
 
+            <Button
+                android:id="@+id/btnViewAllTickets"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="View All Tickets"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/primary"
+                android:textColor="@color/white"
+                android:layout_marginTop="12dp" />
+
+            <Button
+                android:id="@+id/btnReviewDocuments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Review Client Documents"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/success"
+                android:textColor="@color/white"
+                android:layout_marginTop="8dp" />
+
+            <Button
+                android:id="@+id/btnClientMessages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Client Messages"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/primary"
+                android:textColor="@color/white"
+                android:layout_marginTop="8dp" />
+
+            <Button
+                android:id="@+id/btnReports"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Manager Reports"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/gray_600"
+                android:textColor="@color/white"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnAdminPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Admin Panel"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/gray_600"
+                android:textColor="@color/white"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
         </LinearLayout>
     </ScrollView>
-
-    <Button
-        android:id="@+id/btnViewAllTickets"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View All Tickets"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/primary"
-        android:textColor="@color/white"
-        android:layout_marginTop="12dp" />
-
-    <Button
-        android:id="@+id/btnReviewDocuments"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Review Client Documents"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/success"
-        android:textColor="@color/white"
-        android:layout_marginTop="8dp" />
-
-    <Button
-        android:id="@+id/btnClientMessages"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Client Messages"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/primary"
-        android:textColor="@color/white"
-        android:layout_marginTop="8dp" />
-
-    <Button
-        android:id="@+id/btnReports"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Manager Reports"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/gray_600"
-        android:textColor="@color/white"
-        android:layout_marginTop="8dp"
-        android:visibility="gone" />
-
-    <Button
-        android:id="@+id/btnAdminPanel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Admin Panel"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/gray_600"
-        android:textColor="@color/white"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:visibility="gone" />
 
     <Button
         android:id="@+id/btnLogout"
