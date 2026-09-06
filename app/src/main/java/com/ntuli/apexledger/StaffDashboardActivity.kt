@@ -107,6 +107,12 @@ class StaffDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }
+
+        findViewById<TextView>(R.id.btnNotifications).setOnClickListener {
+            startActivity(Intent(this, NotificationsActivity::class.java))
+        }
+
+
     }
 
     override fun onResume() {

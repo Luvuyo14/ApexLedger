@@ -13,6 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.ChatMessage
 import com.ntuli.apexledger.ui.MessageAdapter
+import com.ntuli.apexledger.util.NotificationHelper
 
 class ConversationActivity : AppCompatActivity() {
 
@@ -112,6 +113,36 @@ class ConversationActivity : AppCompatActivity() {
                             "isUrgent" to isUrgent
                         )
                     )
+
+                // Notify the other party in this thread (whoever didn't just send this message).
+                db.collection("threads").document(threadId).get()
+                    .addOnSuccessListener { threadDoc ->
+                        val clientId = threadDoc.getString("clientId") ?: return@addOnSuccessListener
+                        val recipientUid = if (uid == clientId) null else clientId
+                        // If the sender IS the client, we'd need to know which accountant to notify;
+                        // that requires looking up assignedAccountantId on the client's user doc.
+                        if (recipientUid != null) {
+                            NotificationHelper.notify(
+                                recipientUid = recipientUid,
+                                type = if (isUrgent) "urgent_message" else "new_message",
+                                title = if (isUrgent) "Urgent message" else "New message",
+                                body = text.take(80)
+                            )
+                        } else {
+                            db.collection("users").document(clientId).get()
+                                .addOnSuccessListener { clientDoc ->
+                                    val accountantId = clientDoc.getString("assignedAccountantId")
+                                    if (!accountantId.isNullOrEmpty()) {
+                                        NotificationHelper.notify(
+                                            recipientUid = accountantId,
+                                            type = if (isUrgent) "urgent_message" else "new_message",
+                                            title = if (isUrgent) "Urgent message from client" else "New message from client",
+                                            body = text.take(80)
+                                        )
+                                    }
+                                }
+                        }
+                    }
             }
     }
 }

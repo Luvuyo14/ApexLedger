@@ -14,6 +14,26 @@
         app:titleTextColor="@color/navy"
         app:title="Staff Dashboard" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:background="@color/white"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:id="@+id/btnNotifications"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔔 Notifications"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

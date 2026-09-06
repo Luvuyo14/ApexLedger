@@ -15,6 +15,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.Document
 import com.ntuli.apexledger.ui.StaffDocumentAdapter
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.NotificationHelper
 
 class StaffDocumentsActivity : AppCompatActivity() {
 
@@ -133,6 +134,20 @@ class StaffDocumentsActivity : AppCompatActivity() {
                     "User", "Document Review",
                     "${doc.fileName} → $newStatus (client: ${doc.clientName})"
                 )
+
+                db.collection("documents").document(doc.documentId).get()
+                    .addOnSuccessListener { d ->
+                        val clientId = d.getString("clientId")
+                        if (clientId != null) {
+                            NotificationHelper.notify(
+                                recipientUid = clientId,
+                                type = "document_review",
+                                title = "Document $newStatus",
+                                body = "${doc.fileName} was $newStatus by your accountant."
+                            )
+                        }
+                    }
+
                 loadAssignedDocuments(findViewById(R.id.tvEmptyState))
             }
             .addOnFailureListener { e ->

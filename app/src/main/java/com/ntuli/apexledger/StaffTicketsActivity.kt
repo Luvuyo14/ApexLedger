@@ -17,6 +17,7 @@ import com.ntuli.apexledger.ui.StaffTicketAdapter
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.util.AuditLogger
 import java.util.Calendar
+import com.ntuli.apexledger.util.NotificationHelper
 
 class StaffTicketsActivity : AppCompatActivity() {
 
@@ -158,6 +159,20 @@ class StaffTicketsActivity : AppCompatActivity() {
                     "User", "Update Ticket Status",
                     "${ticket.ticketNumber} → $newStatus (client: ${ticket.clientName})"
                 )
+
+                db.collection("tickets").document(ticket.ticketId).get()
+                    .addOnSuccessListener { doc ->
+                        val clientId = doc.getString("clientId")
+                        if (clientId != null) {
+                            NotificationHelper.notify(
+                                recipientUid = clientId,
+                                type = "ticket_update",
+                                title = "Ticket ${ticket.ticketNumber} updated",
+                                body = "Your ticket status changed to ${newStatus.replace("_", " ")}."
+                            )
+                        }
+                    }
+
                 loadAssignedTickets(findViewById(R.id.tvEmptyState))
             }
             .addOnFailureListener { e ->

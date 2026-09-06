@@ -95,6 +95,10 @@ class DashboardActivity : AppCompatActivity() {
             drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
+
+        findViewById<TextView>(R.id.btnNotifications).setOnClickListener {
+            startActivity(Intent(this, NotificationsActivity::class.java))
+        }
     }
 
     private fun loadTicketsAndOverdue(uid: String) {
