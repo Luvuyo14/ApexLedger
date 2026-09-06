@@ -5,6 +5,7 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +19,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.AuditLogAdapter
 import com.ntuli.apexledger.ui.AuditLogEntry
+import com.ntuli.apexledger.ui.ClientAdapter
+import com.ntuli.apexledger.ui.ClientListItem
 import com.ntuli.apexledger.ui.PermissionAdapter
 import com.ntuli.apexledger.ui.PermissionRow
 import com.ntuli.apexledger.ui.ServiceStatus
@@ -34,12 +37,18 @@ class AdminPanelActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var staffAdapter: StaffAdapter
     private lateinit var auditAdapter: AuditLogAdapter
+    private lateinit var clientAdapter: ClientAdapter
 
     private val roles = listOf("accountant", "manager", "admin")
     private val departments = listOf(
         "Taxation (accountant)", "Payroll (accountant)", "Bookkeeping (accountant)",
         "Advisory (accountant)", "Audit (accountant)", "Administration"
     )
+
+    private var clientIds: List<String> = emptyList()
+    private var clientNames: List<String> = emptyList()
+    private var accountantIds: List<String> = emptyList()
+    private var accountantNames: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +61,7 @@ class AdminPanelActivity : AppCompatActivity() {
 
         setupTabs()
         setupUserManagementSection()
+        setupClientAssignmentSection()
         setupPermissionsSection()
         setupAuditLogSection()
         setupSystemHealthSection()
@@ -144,6 +154,7 @@ class AdminPanelActivity : AppCompatActivity() {
                         tvStatus.text = "Staff account created for $name"
                         AuditLogger.logEvent("Admin", "Create Staff Account", "Created $role account for $name ($email)")
                         loadStaffList()
+                        loadAccountantsForSpinner()
                     }
                     .addOnFailureListener { e ->
                         tvStatus.setTextColor(0xFFD32F2F.toInt())
@@ -174,6 +185,90 @@ class AdminPanelActivity : AppCompatActivity() {
                     )
                 }
                 staffAdapter.updateData(staff)
+            }
+    }
+
+    private fun setupClientAssignmentSection() {
+        val spinnerClient = findViewById<Spinner>(R.id.spinnerAssignClient)
+        val spinnerAccountant = findViewById<Spinner>(R.id.spinnerAssignAccountant)
+        val btnAssign = findViewById<MaterialButton>(R.id.btnAssignClient)
+        val rvClients = findViewById<RecyclerView>(R.id.rvClients)
+
+        clientAdapter = ClientAdapter(emptyList())
+        rvClients.layoutManager = LinearLayoutManager(this)
+        rvClients.adapter = clientAdapter
+
+        loadClientsForSpinnerAndList()
+        loadAccountantsForSpinner()
+
+        btnAssign.setOnClickListener {
+            if (clientIds.isEmpty() || accountantIds.isEmpty()) {
+                Toast.makeText(this, "Need at least one client and one accountant", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val clientId = clientIds[spinnerClient.selectedItemPosition]
+            val clientName = clientNames[spinnerClient.selectedItemPosition]
+            val accountantId = accountantIds[spinnerAccountant.selectedItemPosition]
+            val accountantName = accountantNames[spinnerAccountant.selectedItemPosition]
+
+            db.collection("users").document(clientId)
+                .update("assignedAccountantId", accountantId)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "$clientName assigned to $accountantName", Toast.LENGTH_SHORT).show()
+                    AuditLogger.logEvent(
+                        "Admin", "Assign Client",
+                        "$clientName assigned to accountant $accountantName"
+                    )
+                    loadClientsForSpinnerAndList()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
+    private fun loadClientsForSpinnerAndList() {
+        db.collection("users")
+            .whereEqualTo("role", "client")
+            .get()
+            .addOnSuccessListener { result ->
+                clientIds = result.documents.map { it.id }
+                clientNames = result.documents.map { it.getString("full_name") ?: "Unnamed client" }
+
+                val displayNames = if (clientNames.isEmpty()) listOf("No clients yet") else clientNames
+                findViewById<Spinner>(R.id.spinnerAssignClient).adapter =
+                    ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayNames)
+
+                // Build the assigned-accountant-name lookup for the list view
+                val accountantIdToName = accountantIds.zip(accountantNames).toMap()
+
+                val clientListItems = result.documents.map { d ->
+                    val accId = d.getString("assignedAccountantId") ?: ""
+                    ClientListItem(
+                        uid = d.id,
+                        fullName = d.getString("full_name") ?: "Unnamed client",
+                        email = d.getString("email") ?: "",
+                        assignedAccountantName = accountantIdToName[accId] ?: ""
+                    )
+                }
+                clientAdapter.updateData(clientListItems)
+            }
+    }
+
+    private fun loadAccountantsForSpinner() {
+        db.collection("users")
+            .whereEqualTo("role", "accountant")
+            .get()
+            .addOnSuccessListener { result ->
+                accountantIds = result.documents.map { it.id }
+                accountantNames = result.documents.map { it.getString("full_name") ?: "Unnamed accountant" }
+
+                val displayNames = if (accountantNames.isEmpty()) listOf("No accountants yet") else accountantNames
+                findViewById<Spinner>(R.id.spinnerAssignAccountant).adapter =
+                    ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayNames)
+
+                // Refresh the client list now that we know accountant names, so badges resolve correctly
+                loadClientsForSpinnerAndList()
             }
     }
 
@@ -237,18 +332,15 @@ class AdminPanelActivity : AppCompatActivity() {
         colorStatBar(R.id.statFailedLogins, R.color.danger)
         colorStatBar(R.id.statAuditEvents, R.color.primary)
 
-        // Active clients / staff counts
         db.collection("users").whereEqualTo("role", "client").get()
             .addOnSuccessListener { setStat(R.id.statActiveClientsHealth, "Active Clients", it.size().toString()) }
 
         db.collection("users").whereIn("role", listOf("accountant", "manager", "admin")).get()
             .addOnSuccessListener { setStat(R.id.statActiveStaff, "Active Staff", it.size().toString()) }
 
-        // Documents pending review
         db.collection("documents").whereEqualTo("reviewStatus", "pending").get()
             .addOnSuccessListener { setStat(R.id.statDocsPending, "Docs Pending Review", it.size().toString()) }
 
-        // Failed logins today and audit events today (from audit_log, filtered client-side by date)
         val startOfToday = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }.time
@@ -262,7 +354,6 @@ class AdminPanelActivity : AppCompatActivity() {
                 setStat(R.id.statFailedLogins, "Failed Logins Today", failedLogins.toString())
             }
 
-        // Service status list — reflects what this app actually depends on
         val rvServiceStatus = findViewById<RecyclerView>(R.id.rvServiceStatus)
         rvServiceStatus.layoutManager = LinearLayoutManager(this)
         rvServiceStatus.adapter = ServiceStatusAdapter(
