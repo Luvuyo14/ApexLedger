@@ -39,62 +39,61 @@ class RegisterActivity : AppCompatActivity() {
             this, android.R.layout.simple_spinner_dropdown_item, servicePreferences
         )
 
-        btnRegisterClient.setOnClickListener {
-            val fullName = etFullName.text.toString().trim()
-            val email = etEmail.text.toString().trim()
-            val phone = etPhone.text.toString().trim()
-            val taxNumber = etTaxNumber.text.toString().trim()
-            val servicePreference = servicePreferences[spinnerServicePreference.selectedItemPosition]
-            val address = etAddress.text.toString().trim()
-            val password = etPassword.text.toString()
-            val confirmPassword = etConfirmPassword.text.toString()
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid ?: return@addOnSuccessListener
 
-            if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || taxNumber.isEmpty() || address.isEmpty()) {
-                tvStatus.text = "Please fill in all required fields"
-                return@setOnClickListener
-            }
-            if (taxNumber.length != 10) {
-                tvStatus.text = "Tax number must be exactly 10 digits"
-                return@setOnClickListener
-            }
-            if (password.length < 8) {
-                tvStatus.text = "Password must be at least 8 characters"
-                return@setOnClickListener
-            }
-            if (password != confirmPassword) {
-                tvStatus.text = "Passwords do not match"
-                return@setOnClickListener
-            }
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener { result ->
-                    val uid = result.user?.uid ?: return@addOnSuccessListener
-
-                    val profile = hashMapOf(
-                        "full_name" to fullName,
-                        "email" to email,
-                        "phone" to phone,
-                        "taxNumber" to taxNumber,
-                        "servicePreference" to servicePreference,
-                        "address" to address,
-                        "role" to "client",
-                        "assignedAccountantId" to "",
-                        "notify_email" to true,
-                        "notify_sms" to false,
-                        "notify_push" to true,
-                        "created_at" to com.google.firebase.Timestamp.now()
-                    )
-
-                    db.collection("users").document(uid).set(profile)
-                        .addOnSuccessListener {
-                            tvStatus.setTextColor(0xFF2E7D32.toInt())
-                            tvStatus.text = "Account created! You can now sign in."
-                        }
-                        .addOnFailureListener { e ->
-                            tvStatus.setTextColor(0xFFD32F2F.toInt())
-                            tvStatus.text = "Profile save failed: ${e.message}"
-                        }
+                // Duty routing: find the accountant whose department matches this
+                // client's chosen service preference, per the routing rule (no
+                // admin hand-off — client queries go straight to the owning duty).
+                val dutyKeyword = when (servicePreference) {
+                    "tax_return" -> "Taxation"
+                    "payroll" -> "Payroll"
+                    "bookkeeping" -> "Bookkeeping"
+                    "advisory" -> "Advisory"
+                    "audit" -> "Audit"
+                    else -> ""
                 }
+
+                db.collection("users")
+                    .whereEqualTo("role", "accountant")
+                    .get()
+                    .addOnSuccessListener { accountantsResult ->
+                        val matchedAccountant = accountantsResult.documents.firstOrNull { doc ->
+                            val department = doc.getString("department") ?: ""
+                            dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword)
+                        }
+
+                        val profile = hashMapOf(
+                            "full_name" to fullName,
+                            "email" to email,
+                            "phone" to phone,
+                            "taxNumber" to taxNumber,
+                            "servicePreference" to servicePreference,
+                            "address" to address,
+                            "role" to "client",
+                            "assignedAccountantId" to (matchedAccountant?.id ?: ""),
+                            "notify_email" to true,
+                            "notify_sms" to false,
+                            "notify_push" to true,
+                            "created_at" to com.google.firebase.Timestamp.now()
+                        )
+
+                        db.collection("users").document(uid).set(profile)
+                            .addOnSuccessListener {
+                                tvStatus.setTextColor(0xFF2E7D32.toInt())
+                                tvStatus.text = if (matchedAccountant != null) {
+                                    "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}."
+                                } else {
+                                    "Account created! No accountant currently handles this duty — an admin will assign one shortly."
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                tvStatus.setTextColor(0xFFD32F2F.toInt())
+                                tvStatus.text = "Profile save failed: ${e.message}"
+                            }
+                    }
+
                 .addOnFailureListener { e ->
                     tvStatus.setTextColor(0xFFD32F2F.toInt())
                     tvStatus.text = "Registration failed: ${e.message}"
