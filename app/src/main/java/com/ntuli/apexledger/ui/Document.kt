@@ -5,5 +5,7 @@ data class Document(
     val fileName: String = "",
     val documentCategory: String = "other",
     val reviewStatus: String = "pending",
-    val clientName: String = ""
+    val clientName: String = "",
+    val version: Int = 1,
+    val previousVersionIds: List<String> = emptyList()
 )

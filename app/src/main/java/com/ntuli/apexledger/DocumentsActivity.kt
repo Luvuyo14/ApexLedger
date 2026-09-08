@@ -18,9 +18,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.ntuli.apexledger.ui.Document
 import com.ntuli.apexledger.ui.DocumentAdapter
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.NotificationHelper
 
 class DocumentsActivity : AppCompatActivity() {
 
@@ -88,13 +87,24 @@ class DocumentsActivity : AppCompatActivity() {
             .whereEqualTo("clientId", uid)
             .get()
             .addOnSuccessListener { result ->
-                val docs = result.documents.map { d ->
+                // Only show the latest version per category: a document that
+                // is itself referenced in another document's previousVersionIds
+                // is a superseded version and should be hidden from the main list.
+                val allDocs = result.documents
+                val supersededIds = allDocs.flatMap { d ->
+                    (d.get("previousVersionIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                }.toSet()
+
+                val latestDocs = allDocs.filter { it.id !in supersededIds }
+
+                val docs = latestDocs.map { d ->
                     Document(
-                    documentId = d.id,
-                    fileName = d.getString("fileName") ?: "Untitled",
-                    documentCategory = d.getString("documentCategory") ?: "other",
-                    reviewStatus = d.getString("reviewStatus") ?: "pending"
-                )
+                        documentId = d.id,
+                        fileName = d.getString("fileName") ?: "Untitled",
+                        documentCategory = d.getString("documentCategory") ?: "other",
+                        reviewStatus = d.getString("reviewStatus") ?: "pending",
+                        version = (d.getLong("version") ?: 1L).toInt()
+                    )
                 }
                 adapter.updateData(docs)
                 tvEmptyState.visibility = if (docs.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
@@ -108,27 +118,77 @@ class DocumentsActivity : AppCompatActivity() {
 
         Toast.makeText(this, "Uploading...", Toast.LENGTH_SHORT).show()
 
-        storageRef.putFile(uri)
-            .addOnSuccessListener {
-                storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
-                    val docData = hashMapOf(
-                        "clientId" to uid,
-                        "fileName" to fileName,
-                        "filePath" to downloadUrl.toString(),
-                        "documentCategory" to category,
-                        "reviewStatus" to "pending",
-                        "uploadTimestamp" to com.google.firebase.Timestamp.now()
-                    )
-                    db.collection("documents").add(docData)
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "Upload complete!", Toast.LENGTH_SHORT).show()
-                            pendingUri = null
-                            loadDocuments(findViewById(R.id.tvEmptyState))
-                        }
+        // Check if this client already has a latest document in this category,
+        // so we know whether this upload is version 1 or a new version of an
+        // existing document.
+        db.collection("documents")
+            .whereEqualTo("clientId", uid)
+            .whereEqualTo("documentCategory", category)
+            .get()
+            .addOnSuccessListener { existingResult ->
+                val existingDocs = existingResult.documents
+                val supersededIds = existingDocs.flatMap { d ->
+                    (d.get("previousVersionIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                }.toSet()
+                val currentLatest = existingDocs.firstOrNull { it.id !in supersededIds }
+
+                val newVersion = ((currentLatest?.getLong("version") ?: 0L).toInt()) + 1
+                val previousIds = if (currentLatest != null) {
+                    val priorChain = (currentLatest.get("previousVersionIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                    priorChain + currentLatest.id
+                } else {
+                    emptyList()
                 }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Upload failed: ${e.message}", Toast.LENGTH_LONG).show()
+
+                storageRef.putFile(uri)
+                    .addOnSuccessListener {
+                        storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                            val docData = hashMapOf(
+                                "clientId" to uid,
+                                "fileName" to fileName,
+                                "filePath" to downloadUrl.toString(),
+                                "documentCategory" to category,
+                                "reviewStatus" to "pending",
+                                "version" to newVersion,
+                                "previousVersionIds" to previousIds,
+                                "uploadTimestamp" to com.google.firebase.Timestamp.now()
+                            )
+                            db.collection("documents").add(docData)
+                                .addOnSuccessListener {
+                                    val message = if (newVersion > 1) {
+                                        "Upload complete! This is version $newVersion."
+                                    } else {
+                                        "Upload complete!"
+                                    }
+                                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+                                    AuditLogger.logEvent(
+                                        "Client", "Upload Document",
+                                        "$fileName (version $newVersion, category: $category)"
+                                    )
+
+                                    // Notify the assigned accountant that a new/updated document needs review
+                                    db.collection("users").document(uid).get()
+                                        .addOnSuccessListener { clientDoc ->
+                                            val accountantId = clientDoc.getString("assignedAccountantId")
+                                            if (!accountantId.isNullOrEmpty()) {
+                                                NotificationHelper.notify(
+                                                    recipientUid = accountantId,
+                                                    type = "document_upload",
+                                                    title = "New document to review",
+                                                    body = "$fileName was uploaded (version $newVersion)."
+                                                )
+                                            }
+                                        }
+
+                                    pendingUri = null
+                                    loadDocuments(findViewById(R.id.tvEmptyState))
+                                }
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Upload failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
             }
     }
 }

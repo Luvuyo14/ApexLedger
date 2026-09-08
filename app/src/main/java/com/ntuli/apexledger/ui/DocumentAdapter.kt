@@ -12,6 +12,7 @@ class DocumentAdapter(private var items: List<Document>) :
 
     class DocViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvDocName)
+        val tvVersion: TextView = view.findViewById(R.id.tvVersionBadge)
         val tvMeta: TextView = view.findViewById(R.id.tvDocMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvDocStatus)
     }
@@ -25,6 +26,7 @@ class DocumentAdapter(private var items: List<Document>) :
     override fun onBindViewHolder(holder: DocViewHolder, position: Int) {
         val doc = items[position]
         holder.tvName.text = doc.fileName
+        holder.tvVersion.text = "v${doc.version}"
         holder.tvMeta.text = doc.documentCategory.replace("_", " ").replaceFirstChar { it.uppercase() }
         holder.tvStatus.text = doc.reviewStatus.replace("_", " ").replaceFirstChar { it.uppercase() }
 

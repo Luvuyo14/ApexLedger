@@ -101,7 +101,8 @@ class StaffDocumentsActivity : AppCompatActivity() {
                                     fileName = d.getString("fileName") ?: "Untitled",
                                     documentCategory = d.getString("documentCategory") ?: "other",
                                     reviewStatus = d.getString("reviewStatus") ?: "pending",
-                                    clientName = clientNames[d.getString("clientId")] ?: "Unknown client"
+                                    clientName = clientNames[d.getString("clientId")] ?: "Unknown client",
+                                    version = (d.getLong("version") ?: 1L).toInt()
                                 )
                             }
                             fetched.addAll(docs)
