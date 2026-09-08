@@ -1,10 +1,12 @@
 package com.ntuli.apexledger
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,6 +28,7 @@ class MainActivity : AppCompatActivity() {
         val etPassword = findViewById<EditText>(R.id.etPassword)
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val btnRegister = findViewById<Button>(R.id.btnRegister)
+        val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
 
         btnLogin.setOnClickListener {
@@ -68,6 +71,7 @@ class MainActivity : AppCompatActivity() {
                         }
                 }
                 .addOnFailureListener { e ->
+                    AuditLogger.logEvent("Client", "Failed Login", e.message ?: "")
                     tvStatus.setTextColor(0xFFD32F2F.toInt())
                     tvStatus.text = "Login failed: ${e.message}"
                 }
@@ -76,5 +80,38 @@ class MainActivity : AppCompatActivity() {
         btnRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
+
+        tvForgotPassword.setOnClickListener {
+            showForgotPasswordDialog()
+        }
+    }
+
+    private fun showForgotPasswordDialog() {
+        val etResetEmail = EditText(this)
+        etResetEmail.hint = "Enter your account email"
+        etResetEmail.setPadding(48, 32, 48, 0)
+
+        AlertDialog.Builder(this)
+            .setTitle("Reset Password")
+            .setMessage("We'll send a password reset link to your email.")
+            .setView(etResetEmail)
+            .setPositiveButton("Send Reset Link") { _, _ ->
+                val email = etResetEmail.text.toString().trim()
+                if (email.isEmpty()) {
+                    Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                auth.sendPasswordResetEmail(email)
+                    .addOnSuccessListener {
+                        AuditLogger.logEvent("Client", "Password Reset Requested", email)
+                        Toast.makeText(this, "Reset link sent! Check your email.", Toast.LENGTH_LONG).show()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }
