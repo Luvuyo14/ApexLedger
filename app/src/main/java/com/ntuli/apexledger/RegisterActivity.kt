@@ -1,5 +1,6 @@
 package com.ntuli.apexledger
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.EditText
@@ -9,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.util.Patterns
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -17,6 +19,20 @@ class RegisterActivity : AppCompatActivity() {
 
     private val servicePreferences = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit")
 
+    private lateinit var etFullName: EditText
+    private lateinit var etEmail: EditText
+    private lateinit var etPhone: EditText
+    private lateinit var etAddress: EditText
+    private lateinit var etPassword: EditText
+    private lateinit var etConfirmPassword: EditText
+
+    private lateinit var tvErrorFullName: TextView
+    private lateinit var tvErrorEmail: TextView
+    private lateinit var tvErrorPhone: TextView
+    private lateinit var tvErrorAddress: TextView
+    private lateinit var tvErrorPassword: TextView
+    private lateinit var tvErrorConfirmPassword: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
@@ -24,80 +40,148 @@ class RegisterActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        val etFullName = findViewById<EditText>(R.id.etFullName)
-        val etEmail = findViewById<EditText>(R.id.etEmail)
-        val etPhone = findViewById<EditText>(R.id.etPhone)
-        val etTaxNumber = findViewById<EditText>(R.id.etTaxNumber)
+        etFullName = findViewById(R.id.etFullName)
+        etEmail = findViewById(R.id.etEmail)
+        etPhone = findViewById(R.id.etPhone)
         val spinnerServicePreference = findViewById<Spinner>(R.id.spinnerServicePreference)
-        val etAddress = findViewById<EditText>(R.id.etAddress)
-        val etPassword = findViewById<EditText>(R.id.etPassword)
-        val etConfirmPassword = findViewById<EditText>(R.id.etConfirmPassword)
+        etAddress = findViewById(R.id.etAddress)
+        etPassword = findViewById(R.id.etPassword)
+        etConfirmPassword = findViewById(R.id.etConfirmPassword)
         val btnRegisterClient = findViewById<MaterialButton>(R.id.btnRegisterClient)
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
+        val tvBackToLogin = findViewById<TextView>(R.id.tvBackToLogin)
+
+        tvErrorFullName = findViewById(R.id.tvErrorFullName)
+        tvErrorEmail = findViewById(R.id.tvErrorEmail)
+        tvErrorPhone = findViewById(R.id.tvErrorPhone)
+        tvErrorAddress = findViewById(R.id.tvErrorAddress)
+        tvErrorPassword = findViewById(R.id.tvErrorPassword)
+        tvErrorConfirmPassword = findViewById(R.id.tvErrorConfirmPassword)
 
         spinnerServicePreference.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item, servicePreferences
         )
 
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                val uid = result.user?.uid ?: return@addOnSuccessListener
+        tvBackToLogin.setOnClickListener {
+            finish()
+        }
 
-                // Duty routing: find the accountant whose department matches this
-                // client's chosen service preference, per the routing rule (no
-                // admin hand-off — client queries go straight to the owning duty).
-                val dutyKeyword = when (servicePreference) {
-                    "tax_return" -> "Taxation"
-                    "payroll" -> "Payroll"
-                    "bookkeeping" -> "Bookkeeping"
-                    "advisory" -> "Advisory"
-                    "audit" -> "Audit"
-                    else -> ""
-                }
+        btnRegisterClient.setOnClickListener {
+            clearAllFieldErrors()
+            tvStatus.text = ""
 
-                db.collection("users")
-                    .whereEqualTo("role", "accountant")
-                    .get()
-                    .addOnSuccessListener { accountantsResult ->
-                        val matchedAccountant = accountantsResult.documents.firstOrNull { doc ->
-                            val department = doc.getString("department") ?: ""
-                            dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword)
-                        }
+            val fullName = etFullName.text.toString().trim()
+            val email = etEmail.text.toString().trim()
+            val phone = etPhone.text.toString().trim()
+            val servicePreference = servicePreferences[spinnerServicePreference.selectedItemPosition]
+            val address = etAddress.text.toString().trim()
+            val password = etPassword.text.toString()
+            val confirmPassword = etConfirmPassword.text.toString()
 
-                        val profile = hashMapOf(
-                            "full_name" to fullName,
-                            "email" to email,
-                            "phone" to phone,
-                            "taxNumber" to taxNumber,
-                            "servicePreference" to servicePreference,
-                            "address" to address,
-                            "role" to "client",
-                            "assignedAccountantId" to (matchedAccountant?.id ?: ""),
-                            "notify_email" to true,
-                            "notify_sms" to false,
-                            "notify_push" to true,
-                            "created_at" to com.google.firebase.Timestamp.now()
-                        )
+            var hasError = false
 
-                        db.collection("users").document(uid).set(profile)
-                            .addOnSuccessListener {
-                                tvStatus.setTextColor(0xFF2E7D32.toInt())
-                                tvStatus.text = if (matchedAccountant != null) {
-                                    "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}."
-                                } else {
-                                    "Account created! No accountant currently handles this duty — an admin will assign one shortly."
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                tvStatus.setTextColor(0xFFD32F2F.toInt())
-                                tvStatus.text = "Profile save failed: ${e.message}"
-                            }
+            if (fullName.isEmpty()) {
+                showFieldError(etFullName, tvErrorFullName, "Full name is required")
+                hasError = true
+            }
+            if (email.isEmpty()) {
+                showFieldError(etEmail, tvErrorEmail, "Email is required")
+                hasError = true
+            } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                showFieldError(etEmail, tvErrorEmail, "Enter a valid email address")
+                hasError = true
+            }
+            if (phone.isEmpty()) {
+                showFieldError(etPhone, tvErrorPhone, "Phone number is required")
+                hasError = true
+            }
+            if (address.isEmpty()) {
+                showFieldError(etAddress, tvErrorAddress, "Address is required")
+                hasError = true
+            }
+            if (password.length < 8) {
+                showFieldError(etPassword, tvErrorPassword, "Password must be at least 8 characters")
+                hasError = true
+            }
+            if (confirmPassword != password) {
+                showFieldError(etConfirmPassword, tvErrorConfirmPassword, "Passwords do not match")
+                hasError = true
+            }
+
+            if (hasError) return@setOnClickListener
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener { result ->
+                    val uid = result.user?.uid ?: return@addOnSuccessListener
+
+                    // Duty routing: find the accountant whose department matches this
+                    // client's chosen service preference, per the routing rule (no
+                    // admin hand-off — client queries go straight to the owning duty).
+                    val dutyKeyword = when (servicePreference) {
+                        "tax_return" -> "Taxation"
+                        "payroll" -> "Payroll"
+                        "bookkeeping" -> "Bookkeeping"
+                        "advisory" -> "Advisory"
+                        "audit" -> "Audit"
+                        else -> ""
                     }
 
+                    db.collection("users")
+                        .whereEqualTo("role", "accountant")
+                        .get()
+                        .addOnSuccessListener { accountantsResult ->
+                            val matchedAccountant = accountantsResult.documents.firstOrNull { doc ->
+                                val department = doc.getString("department") ?: ""
+                                dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword)
+                            }
+
+                            val profile = hashMapOf(
+                                "full_name" to fullName,
+                                "email" to email,
+                                "phone" to phone,
+                                "servicePreference" to servicePreference,
+                                "address" to address,
+                                "role" to "client",
+                                "assignedAccountantId" to (matchedAccountant?.id ?: ""),
+                                "notify_email" to true,
+                                "notify_sms" to false,
+                                "notify_push" to true,
+                                "created_at" to com.google.firebase.Timestamp.now()
+                            )
+
+                            db.collection("users").document(uid).set(profile)
+                                .addOnSuccessListener {
+                                    tvStatus.setTextColor(0xFF2E7D32.toInt())
+                                    tvStatus.text = if (matchedAccountant != null) {
+                                        "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}."
+                                    } else {
+                                        "Account created! No accountant currently handles this duty — an admin will assign one shortly."
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    tvStatus.setTextColor(0xFFD32F2F.toInt())
+                                    tvStatus.text = "Profile save failed: ${e.message}"
+                                }
+                        }
+                }
                 .addOnFailureListener { e ->
                     tvStatus.setTextColor(0xFFD32F2F.toInt())
                     tvStatus.text = "Registration failed: ${e.message}"
                 }
         }
+    }
+
+    private fun showFieldError(field: EditText, errorLabel: TextView, message: String) {
+        field.setBackgroundResource(R.drawable.bg_input_field_error)
+        errorLabel.text = message
+        errorLabel.visibility = android.view.View.VISIBLE
+    }
+
+    private fun clearAllFieldErrors() {
+        val fields = listOf(etFullName, etEmail, etPhone, etAddress, etPassword, etConfirmPassword)
+        val errorLabels = listOf(tvErrorFullName, tvErrorEmail, tvErrorPhone, tvErrorAddress, tvErrorPassword, tvErrorConfirmPassword)
+
+        fields.forEach { it.setBackgroundResource(R.drawable.bg_input_field) }
+        errorLabels.forEach { it.visibility = android.view.View.GONE }
     }
 }

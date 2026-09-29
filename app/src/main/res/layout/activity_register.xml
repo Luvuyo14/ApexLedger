@@ -65,7 +65,7 @@
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="16dp" />
 
-                <TextView style="@style/Text.Body" android:text="Full Name *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" />
+                <TextView android:text="Full Name *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
                     android:id="@+id/etFullName"
                     android:layout_width="match_parent"
@@ -74,7 +74,16 @@
                     android:paddingStart="14dp" android:paddingEnd="14dp"
                     android:inputType="textPersonName"
                     android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorFullName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
 
                 <TextView android:text="Email *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
@@ -85,7 +94,16 @@
                     android:paddingStart="14dp" android:paddingEnd="14dp"
                     android:inputType="textEmailAddress"
                     android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
 
                 <TextView android:text="Phone *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
@@ -97,19 +115,16 @@
                     android:inputType="phone"
                     android:hint="082 000 0000"
                     android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
-
-                <TextView android:text="Tax Number (10 digits) *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                <EditText
-                    android:id="@+id/etTaxNumber"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
-                    android:paddingStart="14dp" android:paddingEnd="14dp"
-                    android:inputType="number"
-                    android:hint="e.g. 1234567890"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorPhone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
 
                 <TextView android:text="Service Preference *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <Spinner
@@ -137,7 +152,16 @@
                     android:padding="14dp"
                     android:hint="Street, suburb, city, postal code"
                     android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorAddress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
 
                 <TextView android:text="Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
@@ -149,7 +173,16 @@
                     android:inputType="textPassword"
                     android:hint="Min 8 chars, 1 uppercase, 1 number"
                     android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
 
                 <TextView android:text="Confirm Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
@@ -160,7 +193,16 @@
                     android:paddingStart="14dp" android:paddingEnd="14dp"
                     android:inputType="textPassword"
                     android:textSize="14sp"
-                    android:layout_marginTop="4dp" android:layout_marginBottom="18dp" />
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorConfirmPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="14dp"
+                    android:visibility="gone" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRegisterClient"
@@ -169,17 +211,28 @@
                     android:text="Register Client"
                     android:textAllCaps="false"
                     android:textStyle="bold"
-                    android:backgroundTint="@color/primary" />
+                    android:backgroundTint="@color/primary"
+                    android:layout_marginBottom="14dp" />
 
                 <TextView
                     android:id="@+id/tvStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
                     android:textColor="@color/danger_dark"
                     android:textSize="13sp"
-                    android:gravity="center" />
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tvBackToLogin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Already have an account? Login here"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

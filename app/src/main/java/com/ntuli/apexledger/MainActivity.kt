@@ -72,6 +72,8 @@ class MainActivity : AppCompatActivity() {
                 }
                 .addOnFailureListener { e ->
                     AuditLogger.logEvent("Client", "Failed Login", e.message ?: "")
+                    etEmail.setBackgroundResource(R.drawable.bg_input_field_error)
+                    etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
                     tvStatus.setTextColor(0xFFD32F2F.toInt())
                     tvStatus.text = "Login failed: ${e.message}"
                 }
