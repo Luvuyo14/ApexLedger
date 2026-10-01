@@ -29,53 +29,108 @@ class MainActivity : AppCompatActivity() {
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val btnRegister = findViewById<Button>(R.id.btnRegister)
         val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
+        val tvErrorEmail = findViewById<TextView>(R.id.tvErrorEmail)
+        val tvErrorPassword = findViewById<TextView>(R.id.tvErrorPassword)
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
 
         btnLogin.setOnClickListener {
+            etEmail.setBackgroundResource(R.drawable.bg_input_field)
+            etPassword.setBackgroundResource(R.drawable.bg_input_field)
+            tvErrorEmail.visibility = android.view.View.GONE
+            tvErrorPassword.visibility = android.view.View.GONE
+            tvStatus.text = ""
+
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
 
-            if (email.isEmpty() || password.isEmpty()) {
-                tvStatus.text = "Please enter email and password"
-                return@setOnClickListener
+            var hasError = false
+            if (email.isEmpty()) {
+                etEmail.setBackgroundResource(R.drawable.bg_input_field_error)
+                tvErrorEmail.text = "Email is required"
+                tvErrorEmail.visibility = android.view.View.VISIBLE
+                hasError = true
             }
+            if (password.isEmpty()) {
+                etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
+                tvErrorPassword.text = "Password is required"
+                tvErrorPassword.visibility = android.view.View.VISIBLE
+                hasError = true
+            }
+            if (hasError) return@setOnClickListener
 
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
                     val uid = result.user?.uid
                     if (uid == null) {
-                        startActivity(Intent(this, DashboardActivity::class.java))
-                        finish()
+                        // Should not normally happen, but never guess a role when we
+                        // don't even have a reliable uid. Fail safely.
+                        auth.signOut()
+                        showLoginError(etEmail, etPassword, tvStatus, "Something went wrong signing you in. Please try again.")
                         return@addOnSuccessListener
                     }
 
                     db.collection("users").document(uid).get()
                         .addOnSuccessListener { doc ->
-                            val role = doc.getString("role") ?: "client"
+                            if (!doc.exists()) {
+                                // Auth account exists but has no matching Firestore profile —
+                                // a partially created account. Never default this to "client".
+                                auth.signOut()
+                                showLoginError(
+                                    etEmail, etPassword, tvStatus,
+                                    "Your account setup is incomplete. Please contact support."
+                                )
+                                return@addOnSuccessListener
+                            }
+
+                            val role = doc.getString("role")
+                            if (role.isNullOrEmpty()) {
+                                // A role must always be present. Missing role is a data
+                                // problem, not a reason to silently treat someone as a client.
+                                auth.signOut()
+                                showLoginError(
+                                    etEmail, etPassword, tvStatus,
+                                    "Your account is missing role information. Please contact support."
+                                )
+                                return@addOnSuccessListener
+                            }
 
                             AuditLogger.logEvent(
                                 if (role == "client") "Client" else "User", "Login"
                             )
 
-                            val destination = if (role == "client") {
-                                DashboardActivity::class.java
-                            } else {
-                                StaffDashboardActivity::class.java
+                            val destination = when (role) {
+                                "client" -> DashboardActivity::class.java
+                                "accountant", "manager", "admin" -> StaffDashboardActivity::class.java
+                                else -> null
                             }
+
+                            if (destination == null) {
+                                // Unrecognized role value — don't guess which dashboard is safe.
+                                auth.signOut()
+                                showLoginError(
+                                    etEmail, etPassword, tvStatus,
+                                    "Your account role is not recognized. Please contact support."
+                                )
+                                return@addOnSuccessListener
+                            }
+
                             startActivity(Intent(this, destination))
                             finish()
                         }
-                        .addOnFailureListener {
-                            startActivity(Intent(this, DashboardActivity::class.java))
-                            finish()
+                        .addOnFailureListener { e ->
+                            // Network/Firestore error reading the profile. Do NOT fall back
+                            // to the client dashboard — that would hide a real problem from
+                            // the user and could put a staff member on the wrong screen.
+                            auth.signOut()
+                            showLoginError(
+                                etEmail, etPassword, tvStatus,
+                                "Could not verify your account right now: ${e.message}. Please check your connection and try again."
+                            )
                         }
                 }
                 .addOnFailureListener { e ->
                     AuditLogger.logEvent("Client", "Failed Login", e.message ?: "")
-                    etEmail.setBackgroundResource(R.drawable.bg_input_field_error)
-                    etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
-                    tvStatus.setTextColor(0xFFD32F2F.toInt())
-                    tvStatus.text = "Login failed: ${e.message}"
+                    showLoginError(etEmail, etPassword, tvStatus, "Login failed: ${e.message}")
                 }
         }
 
@@ -86,6 +141,13 @@ class MainActivity : AppCompatActivity() {
         tvForgotPassword.setOnClickListener {
             showForgotPasswordDialog()
         }
+    }
+
+    private fun showLoginError(etEmail: EditText, etPassword: EditText, tvStatus: TextView, message: String) {
+        etEmail.setBackgroundResource(R.drawable.bg_input_field_error)
+        etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
+        tvStatus.setTextColor(0xFFD32F2F.toInt())
+        tvStatus.text = message
     }
 
     private fun showForgotPasswordDialog() {

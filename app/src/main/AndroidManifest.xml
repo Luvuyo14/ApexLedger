@@ -72,6 +72,10 @@
             android:name=".StaffTicketsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".AdminPanelActivity"
+            android:exported="false" />
+
 
     </application>
 

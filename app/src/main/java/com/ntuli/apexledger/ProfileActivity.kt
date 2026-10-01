@@ -2,6 +2,7 @@ package com.ntuli.apexledger
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
@@ -85,31 +86,44 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun showChangePasswordDialog() {
-        val container = android.widget.LinearLayout(this)
-        container.orientation = android.widget.LinearLayout.VERTICAL
-        container.setPadding(48, 24, 48, 0)
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_change_password, null)
+        val etCurrentPassword = view.findViewById<EditText>(R.id.etCurrentPassword)
+        val etNewPassword = view.findViewById<EditText>(R.id.etNewPassword)
+        val tvErrorCurrentPassword = view.findViewById<TextView>(R.id.tvErrorCurrentPassword)
+        val tvErrorNewPassword = view.findViewById<TextView>(R.id.tvErrorNewPassword)
 
-        val etCurrentPassword = EditText(this)
-        etCurrentPassword.hint = "Current password"
-        etCurrentPassword.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        container.addView(etCurrentPassword)
-
-        val etNewPassword = EditText(this)
-        etNewPassword.hint = "New password (6+ characters)"
-        etNewPassword.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        container.addView(etNewPassword)
-
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Change Password")
-            .setView(container)
-            .setPositiveButton("Update") { _, _ ->
+            .setView(view)
+            .setPositiveButton("Update", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btnUpdate = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            btnUpdate.setOnClickListener {
+                etCurrentPassword.setBackgroundResource(R.drawable.bg_input_field)
+                etNewPassword.setBackgroundResource(R.drawable.bg_input_field)
+                tvErrorCurrentPassword.visibility = android.view.View.GONE
+                tvErrorNewPassword.visibility = android.view.View.GONE
+
                 val currentPassword = etCurrentPassword.text.toString()
                 val newPassword = etNewPassword.text.toString()
 
-                if (newPassword.length < 6) {
-                    Toast.makeText(this, "New password must be 6+ characters", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                var hasError = false
+                if (currentPassword.isEmpty()) {
+                    etCurrentPassword.setBackgroundResource(R.drawable.bg_input_field_error)
+                    tvErrorCurrentPassword.text = "Current password is required"
+                    tvErrorCurrentPassword.visibility = android.view.View.VISIBLE
+                    hasError = true
                 }
+                if (newPassword.length < 8) {
+                    etNewPassword.setBackgroundResource(R.drawable.bg_input_field_error)
+                    tvErrorNewPassword.text = "New password must be at least 8 characters"
+                    tvErrorNewPassword.visibility = android.view.View.VISIBLE
+                    hasError = true
+                }
+                if (hasError) return@setOnClickListener
 
                 val user = auth.currentUser
                 val email = user?.email
@@ -120,17 +134,21 @@ class ProfileActivity : AppCompatActivity() {
                             user.updatePassword(newPassword)
                                 .addOnSuccessListener {
                                     Toast.makeText(this, "Password updated", Toast.LENGTH_SHORT).show()
+                                    dialog.dismiss()
                                 }
                                 .addOnFailureListener { e ->
                                     Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
                         }
                         .addOnFailureListener {
-                            Toast.makeText(this, "Current password is incorrect", Toast.LENGTH_SHORT).show()
+                            etCurrentPassword.setBackgroundResource(R.drawable.bg_input_field_error)
+                            tvErrorCurrentPassword.text = "Current password is incorrect"
+                            tvErrorCurrentPassword.visibility = android.view.View.VISIBLE
                         }
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+
+        dialog.show()
     }
 }

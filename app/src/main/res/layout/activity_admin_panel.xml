@@ -89,7 +89,16 @@
                         android:background="@drawable/bg_input_field"
                         android:paddingStart="14dp" android:paddingEnd="14dp"
                         android:textSize="14sp"
-                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                        android:layout_marginTop="4dp" />
+                    <TextView
+                        android:id="@+id/tvErrorStaffName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/danger_dark"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="10dp"
+                        android:visibility="gone" />
 
                     <TextView android:text="Email" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                     <EditText
@@ -100,7 +109,16 @@
                         android:paddingStart="14dp" android:paddingEnd="14dp"
                         android:inputType="textEmailAddress"
                         android:textSize="14sp"
-                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                        android:layout_marginTop="4dp" />
+                    <TextView
+                        android:id="@+id/tvErrorStaffEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/danger_dark"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="10dp"
+                        android:visibility="gone" />
 
                     <TextView android:text="Temporary Password" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                     <EditText
@@ -112,7 +130,16 @@
                         android:inputType="textPassword"
                         android:hint="Min 8 chars"
                         android:textSize="14sp"
-                        android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
+                        android:layout_marginTop="4dp" />
+                    <TextView
+                        android:id="@+id/tvErrorStaffPassword"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/danger_dark"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="10dp"
+                        android:visibility="gone" />
 
                     <TextView android:text="Role" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                     <Spinner
@@ -163,7 +190,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:background="@drawable/bg_card_stroke"
-                    android:padding="16dp">
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -187,8 +215,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:background="@drawable/bg_card_stroke"
-                    android:padding="16dp"
-                    android:layout_marginTop="16dp">
+                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"

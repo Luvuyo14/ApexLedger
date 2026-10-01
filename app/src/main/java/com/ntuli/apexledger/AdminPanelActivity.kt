@@ -91,6 +91,9 @@ class AdminPanelActivity : AppCompatActivity() {
         val etStaffName = findViewById<EditText>(R.id.etStaffName)
         val etStaffEmail = findViewById<EditText>(R.id.etStaffEmail)
         val etStaffPassword = findViewById<EditText>(R.id.etStaffPassword)
+        val tvErrorStaffName = findViewById<TextView>(R.id.tvErrorStaffName)
+        val tvErrorStaffEmail = findViewById<TextView>(R.id.tvErrorStaffEmail)
+        val tvErrorStaffPassword = findViewById<TextView>(R.id.tvErrorStaffPassword)
         val spinnerRole = findViewById<Spinner>(R.id.spinnerRole)
         val spinnerDepartment = findViewById<Spinner>(R.id.spinnerDepartment)
         val btnCreateStaff = findViewById<MaterialButton>(R.id.btnCreateStaff)
@@ -107,16 +110,40 @@ class AdminPanelActivity : AppCompatActivity() {
         loadStaffList()
 
         btnCreateStaff.setOnClickListener {
+            etStaffName.setBackgroundResource(R.drawable.bg_input_field)
+            etStaffEmail.setBackgroundResource(R.drawable.bg_input_field)
+            etStaffPassword.setBackgroundResource(R.drawable.bg_input_field)
+            tvErrorStaffName.visibility = android.view.View.GONE
+            tvErrorStaffEmail.visibility = android.view.View.GONE
+            tvErrorStaffPassword.visibility = android.view.View.GONE
+            tvStatus.text = ""
+
             val name = etStaffName.text.toString().trim()
             val email = etStaffEmail.text.toString().trim()
             val password = etStaffPassword.text.toString()
             val role = roles[spinnerRole.selectedItemPosition]
             val department = departments[spinnerDepartment.selectedItemPosition]
 
-            if (name.isEmpty() || email.isEmpty() || password.length < 8) {
-                tvStatus.text = "Fill in name, email, and an 8+ character password"
-                return@setOnClickListener
+            var hasError = false
+            if (name.isEmpty()) {
+                etStaffName.setBackgroundResource(R.drawable.bg_input_field_error)
+                tvErrorStaffName.text = "Full name is required"
+                tvErrorStaffName.visibility = android.view.View.VISIBLE
+                hasError = true
             }
+            if (email.isEmpty()) {
+                etStaffEmail.setBackgroundResource(R.drawable.bg_input_field_error)
+                tvErrorStaffEmail.text = "Email is required"
+                tvErrorStaffEmail.visibility = android.view.View.VISIBLE
+                hasError = true
+            }
+            if (password.length < 8) {
+                etStaffPassword.setBackgroundResource(R.drawable.bg_input_field_error)
+                tvErrorStaffPassword.text = "Password must be at least 8 characters"
+                tvErrorStaffPassword.visibility = android.view.View.VISIBLE
+                hasError = true
+            }
+            if (hasError) return@setOnClickListener
 
             createStaffAccount(name, email, password, role, department, tvStatus)
         }
@@ -165,6 +192,7 @@ class AdminPanelActivity : AppCompatActivity() {
                 secondaryApp.delete()
             }
             .addOnFailureListener { e ->
+                findViewById<EditText>(R.id.etStaffEmail).setBackgroundResource(R.drawable.bg_input_field_error)
                 tvStatus.setTextColor(0xFFD32F2F.toInt())
                 tvStatus.text = "Failed to create account: ${e.message}"
                 secondaryApp.delete()
@@ -239,7 +267,6 @@ class AdminPanelActivity : AppCompatActivity() {
                 findViewById<Spinner>(R.id.spinnerAssignClient).adapter =
                     ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayNames)
 
-                // Build the assigned-accountant-name lookup for the list view
                 val accountantIdToName = accountantIds.zip(accountantNames).toMap()
 
                 val clientListItems = result.documents.map { d ->
@@ -267,7 +294,6 @@ class AdminPanelActivity : AppCompatActivity() {
                 findViewById<Spinner>(R.id.spinnerAssignAccountant).adapter =
                     ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayNames)
 
-                // Refresh the client list now that we know accountant names, so badges resolve correctly
                 loadClientsForSpinnerAndList()
             }
     }
