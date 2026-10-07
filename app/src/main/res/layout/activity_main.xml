@@ -130,6 +130,14 @@
                         android:textColor="@color/white"
                         android:layout_marginBottom="8dp" />
 
+                    <ProgressBar
+                        android:id="@+id/progressLogin"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone" />
+
                     <TextView
                         android:id="@+id/tvForgotPassword"
                         android:layout_width="wrap_content"

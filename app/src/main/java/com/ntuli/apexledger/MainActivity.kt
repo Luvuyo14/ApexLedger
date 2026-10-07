@@ -58,6 +58,13 @@ class MainActivity : AppCompatActivity() {
             }
             if (hasError) return@setOnClickListener
 
+            val progressLogin = findViewById<android.widget.ProgressBar>(R.id.progressLogin)
+
+            btnLogin.isEnabled = false
+            progressLogin.visibility = android.view.View.VISIBLE
+
+
+
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
                     val uid = result.user?.uid
@@ -148,6 +155,11 @@ class MainActivity : AppCompatActivity() {
         etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
         tvStatus.setTextColor(0xFFD32F2F.toInt())
         tvStatus.text = message
+    }
+
+    private fun resetLoginButton() {
+        findViewById<Button>(R.id.btnLogin).isEnabled = true
+        findViewById<android.widget.ProgressBar>(R.id.progressLogin).visibility = android.view.View.GONE
     }
 
     private fun showForgotPasswordDialog() {

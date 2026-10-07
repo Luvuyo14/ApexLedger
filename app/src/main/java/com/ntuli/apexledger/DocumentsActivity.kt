@@ -66,7 +66,7 @@ class DocumentsActivity : AppCompatActivity() {
         rv.adapter = adapter
 
         uploadDropzone.setOnClickListener {
-            pickFileLauncher.launch("*/*")
+            pickFileLauncher.launch("application/pdf,image/*")
         }
 
         btnUploadSecurely.setOnClickListener {
@@ -113,6 +113,27 @@ class DocumentsActivity : AppCompatActivity() {
 
     private fun uploadDocument(uri: Uri, category: String) {
         val uid = auth.currentUser?.uid ?: return
+
+        val mimeType = contentResolver.getType(uri) ?: ""
+        val isAllowedType = mimeType == "application/pdf" || mimeType.startsWith("image/")
+        if (!isAllowedType) {
+            Toast.makeText(this, "Only PDF and image files are allowed", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        var fileSizeBytes = 0L
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+            if (cursor.moveToFirst() && sizeIndex >= 0) {
+                fileSizeBytes = cursor.getLong(sizeIndex)
+            }
+        }
+        val maxSizeBytes = 10 * 1024 * 1024 // 10 MB
+        if (fileSizeBytes > maxSizeBytes) {
+            Toast.makeText(this, "File is too large. Maximum size is 10MB", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val fileName = uri.lastPathSegment ?: "document_${System.currentTimeMillis()}"
         val storageRef = storage.reference.child("documents/$uid/$fileName")
 

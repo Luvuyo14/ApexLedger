@@ -214,6 +214,9 @@ class AdminPanelActivity : AppCompatActivity() {
                 }
                 staffAdapter.updateData(staff)
             }
+        staffAdapter.updateData(staff)
+        findViewById<TextView>(R.id.tvStaffEmptyState).visibility =
+            if (staff.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun setupClientAssignmentSection() {
@@ -344,7 +347,7 @@ class AdminPanelActivity : AppCompatActivity() {
     }
 
     private fun setupSystemHealthSection() {
-        setStat(R.id.statStorageUsed, "Storage Used", "—")
+        setStat(R.id.statStorageUsed, "Storage Used", "Not available")
         setStat(R.id.statActiveClientsHealth, "Active Clients", "0")
         setStat(R.id.statActiveStaff, "Active Staff", "0")
         setStat(R.id.statDocsPending, "Docs Pending Review", "0")
@@ -384,10 +387,11 @@ class AdminPanelActivity : AppCompatActivity() {
         rvServiceStatus.layoutManager = LinearLayoutManager(this)
         rvServiceStatus.adapter = ServiceStatusAdapter(
             listOf(
-                ServiceStatus("Firestore Database", "Operational", true),
-                ServiceStatus("Firebase Storage", "Operational", true),
-                ServiceStatus("Authentication Service", "Operational", true)
+                ServiceStatus("Firestore Database", "Not monitored", false),
+                ServiceStatus("Firebase Storage", "Not monitored", false),
+                ServiceStatus("Authentication Service", "Not monitored", false)
             )
+        )
         )
     }
 

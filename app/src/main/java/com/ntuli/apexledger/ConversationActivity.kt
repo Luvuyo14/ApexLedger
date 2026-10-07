@@ -1,5 +1,6 @@
 package com.ntuli.apexledger
 
+import android.app.DownloadManager
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.ImageButton
@@ -22,6 +23,7 @@ class ConversationActivity : AppCompatActivity() {
     private lateinit var adapter: MessageAdapter
     private lateinit var threadId: String
 
+    private var messagesListener: com.google.firebase.firestore.ListenerRegistration? = null
     // Keywords per your website's business rule for auto-flagging urgency
     private val urgentKeywords = listOf("urgent", "deadline", "penalty", "asap", "overdue")
 
@@ -59,12 +61,17 @@ class ConversationActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        messagesListener?.remove()
+    }
+
     private fun loadMessages() {
         val uid = auth.currentUser?.uid ?: return
 
-        db.collection("threads").document(threadId)
+        messagesListener = db.collection("threads").document(threadId)
             .collection("messages")
-            .orderBy("sentTimestamp", Query.Direction.ASCENDING)
+            .orderBy("sentTimestamp", DownloadManager.Query.Direction.ASCENDING)
             .addSnapshotListener { result, _ ->
                 if (result != null) {
                     val messages = result.documents.map { d ->
