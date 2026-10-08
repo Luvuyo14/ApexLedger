@@ -1,6 +1,5 @@
 package com.ntuli.apexledger
 
-import android.app.DownloadManager
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.ImageButton
@@ -11,6 +10,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.ntuli.apexledger.ui.ChatMessage
 import com.ntuli.apexledger.ui.MessageAdapter
@@ -23,8 +23,9 @@ class ConversationActivity : AppCompatActivity() {
     private lateinit var adapter: MessageAdapter
     private lateinit var threadId: String
 
-    private var messagesListener: com.google.firebase.firestore.ListenerRegistration? = null
-    // Keywords per your website's business rule for auto-flagging urgency
+    // Kept so we can stop listening when the screen closes.
+    private var messagesListener: ListenerRegistration? = null
+
     private val urgentKeywords = listOf("urgent", "deadline", "penalty", "asap", "overdue")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +65,7 @@ class ConversationActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         messagesListener?.remove()
+        messagesListener = null
     }
 
     private fun loadMessages() {
@@ -71,7 +73,7 @@ class ConversationActivity : AppCompatActivity() {
 
         messagesListener = db.collection("threads").document(threadId)
             .collection("messages")
-            .orderBy("sentTimestamp", DownloadManager.Query.Direction.ASCENDING)
+            .orderBy("sentTimestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { result, _ ->
                 if (result != null) {
                     val messages = result.documents.map { d ->
@@ -83,10 +85,10 @@ class ConversationActivity : AppCompatActivity() {
                         )
                     }
                     adapter.updateData(messages)
-                    findViewById<RecyclerView>(R.id.rvMessages).scrollToPosition(messages.size - 1)
+                    if (messages.isNotEmpty()) {
+                        findViewById<RecyclerView>(R.id.rvMessages).scrollToPosition(messages.size - 1)
+                    }
 
-                    // Mark any messages not sent by us as read, so unread counts
-                    // elsewhere in the app (staff dashboard, client dashboard) stay accurate.
                     for (doc in result.documents) {
                         val readBy = doc.get("readBy") as? List<*> ?: emptyList<String>()
                         if (uid !in readBy) {
@@ -121,16 +123,15 @@ class ConversationActivity : AppCompatActivity() {
                         )
                     )
 
-                // Notify the other party in this thread (whoever didn't just send this message).
+                // Notify the other party: if staff sent it, notify the client;
+                // if the client sent it, notify their assigned accountant.
                 db.collection("threads").document(threadId).get()
                     .addOnSuccessListener { threadDoc ->
                         val clientId = threadDoc.getString("clientId") ?: return@addOnSuccessListener
-                        val recipientUid = if (uid == clientId) null else clientId
-                        // If the sender IS the client, we'd need to know which accountant to notify;
-                        // that requires looking up assignedAccountantId on the client's user doc.
-                        if (recipientUid != null) {
+
+                        if (uid != clientId) {
                             NotificationHelper.notify(
-                                recipientUid = recipientUid,
+                                recipientUid = clientId,
                                 type = if (isUrgent) "urgent_message" else "new_message",
                                 title = if (isUrgent) "Urgent message" else "New message",
                                 body = text.take(80)

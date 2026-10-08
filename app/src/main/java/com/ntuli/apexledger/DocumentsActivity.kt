@@ -2,6 +2,7 @@ package com.ntuli.apexledger
 
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
@@ -32,8 +33,11 @@ class DocumentsActivity : AppCompatActivity() {
     private val categories = listOf("tax_return", "payroll", "bookkeeping", "advisory", "other")
     private var pendingUri: Uri? = null
 
+    private val maxFileSizeBytes = 10L * 1024 * 1024 // 10 MB
+    private val allowedMimeTypes = arrayOf("application/pdf", "image/*")
+
     private val pickFileLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
+        ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
             pendingUri = uri
@@ -66,7 +70,7 @@ class DocumentsActivity : AppCompatActivity() {
         rv.adapter = adapter
 
         uploadDropzone.setOnClickListener {
-            pickFileLauncher.launch("application/pdf,image/*")
+            pickFileLauncher.launch(allowedMimeTypes)
         }
 
         btnUploadSecurely.setOnClickListener {
@@ -87,9 +91,6 @@ class DocumentsActivity : AppCompatActivity() {
             .whereEqualTo("clientId", uid)
             .get()
             .addOnSuccessListener { result ->
-                // Only show the latest version per category: a document that
-                // is itself referenced in another document's previousVersionIds
-                // is a superseded version and should be hidden from the main list.
                 val allDocs = result.documents
                 val supersededIds = allDocs.flatMap { d ->
                     (d.get("previousVersionIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
@@ -114,6 +115,7 @@ class DocumentsActivity : AppCompatActivity() {
     private fun uploadDocument(uri: Uri, category: String) {
         val uid = auth.currentUser?.uid ?: return
 
+        // Validate type
         val mimeType = contentResolver.getType(uri) ?: ""
         val isAllowedType = mimeType == "application/pdf" || mimeType.startsWith("image/")
         if (!isAllowedType) {
@@ -121,27 +123,28 @@ class DocumentsActivity : AppCompatActivity() {
             return
         }
 
+        // Read display name + size in one query
         var fileSizeBytes = 0L
+        var displayName: String? = null
         contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
-            if (cursor.moveToFirst() && sizeIndex >= 0) {
-                fileSizeBytes = cursor.getLong(sizeIndex)
+            if (cursor.moveToFirst()) {
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (sizeIndex >= 0) fileSizeBytes = cursor.getLong(sizeIndex)
+                if (nameIndex >= 0) displayName = cursor.getString(nameIndex)
             }
         }
-        val maxSizeBytes = 10 * 1024 * 1024 // 10 MB
-        if (fileSizeBytes > maxSizeBytes) {
+
+        if (fileSizeBytes > maxFileSizeBytes) {
             Toast.makeText(this, "File is too large. Maximum size is 10MB", Toast.LENGTH_LONG).show()
             return
         }
 
-        val fileName = uri.lastPathSegment ?: "document_${System.currentTimeMillis()}"
+        val fileName = displayName ?: "document_${System.currentTimeMillis()}"
         val storageRef = storage.reference.child("documents/$uid/$fileName")
 
         Toast.makeText(this, "Uploading...", Toast.LENGTH_SHORT).show()
 
-        // Check if this client already has a latest document in this category,
-        // so we know whether this upload is version 1 or a new version of an
-        // existing document.
         db.collection("documents")
             .whereEqualTo("clientId", uid)
             .whereEqualTo("documentCategory", category)
@@ -188,7 +191,6 @@ class DocumentsActivity : AppCompatActivity() {
                                         "$fileName (version $newVersion, category: $category)"
                                     )
 
-                                    // Notify the assigned accountant that a new/updated document needs review
                                     db.collection("users").document(uid).get()
                                         .addOnSuccessListener { clientDoc ->
                                             val accountantId = clientDoc.getString("assignedAccountantId")

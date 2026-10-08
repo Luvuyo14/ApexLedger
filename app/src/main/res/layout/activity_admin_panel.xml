@@ -273,10 +273,10 @@
                         android:layout_marginBottom="8dp" />
 
                     <TextView
-                        android:id="@+id/tvStaffEmptyState"
+                        android:id="@+id/tvClientsEmptyState"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="No client registered yet"
+                        android:text="No clients registered yet"
                         android:textColor="@color/gray_500"
                         android:textSize="13sp"
                         android:gravity="center"

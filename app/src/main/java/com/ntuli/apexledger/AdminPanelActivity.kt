@@ -1,6 +1,7 @@
 package com.ntuli.apexledger
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
@@ -69,23 +70,27 @@ class AdminPanelActivity : AppCompatActivity() {
 
     private fun setupTabs() {
         val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
-        val sectionUserManagement = findViewById<android.view.View>(R.id.sectionUserManagement)
-        val sectionPermissions = findViewById<android.view.View>(R.id.sectionPermissions)
-        val sectionAuditLog = findViewById<android.view.View>(R.id.sectionAuditLog)
-        val sectionSystemHealth = findViewById<android.view.View>(R.id.sectionSystemHealth)
+        val sectionUserManagement = findViewById<View>(R.id.sectionUserManagement)
+        val sectionPermissions = findViewById<View>(R.id.sectionPermissions)
+        val sectionAuditLog = findViewById<View>(R.id.sectionAuditLog)
+        val sectionSystemHealth = findViewById<View>(R.id.sectionSystemHealth)
 
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                sectionUserManagement.visibility = if (tab.position == 0) android.view.View.VISIBLE else android.view.View.GONE
-                sectionPermissions.visibility = if (tab.position == 1) android.view.View.VISIBLE else android.view.View.GONE
-                sectionAuditLog.visibility = if (tab.position == 2) android.view.View.VISIBLE else android.view.View.GONE
-                sectionSystemHealth.visibility = if (tab.position == 3) android.view.View.VISIBLE else android.view.View.GONE
+                sectionUserManagement.visibility = if (tab.position == 0) View.VISIBLE else View.GONE
+                sectionPermissions.visibility = if (tab.position == 1) View.VISIBLE else View.GONE
+                sectionAuditLog.visibility = if (tab.position == 2) View.VISIBLE else View.GONE
+                sectionSystemHealth.visibility = if (tab.position == 3) View.VISIBLE else View.GONE
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
     }
+
+    // ---------------------------------------------------------------
+    // User management
+    // ---------------------------------------------------------------
 
     private fun setupUserManagementSection() {
         val etStaffName = findViewById<EditText>(R.id.etStaffName)
@@ -113,9 +118,9 @@ class AdminPanelActivity : AppCompatActivity() {
             etStaffName.setBackgroundResource(R.drawable.bg_input_field)
             etStaffEmail.setBackgroundResource(R.drawable.bg_input_field)
             etStaffPassword.setBackgroundResource(R.drawable.bg_input_field)
-            tvErrorStaffName.visibility = android.view.View.GONE
-            tvErrorStaffEmail.visibility = android.view.View.GONE
-            tvErrorStaffPassword.visibility = android.view.View.GONE
+            tvErrorStaffName.visibility = View.GONE
+            tvErrorStaffEmail.visibility = View.GONE
+            tvErrorStaffPassword.visibility = View.GONE
             tvStatus.text = ""
 
             val name = etStaffName.text.toString().trim()
@@ -128,19 +133,19 @@ class AdminPanelActivity : AppCompatActivity() {
             if (name.isEmpty()) {
                 etStaffName.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorStaffName.text = "Full name is required"
-                tvErrorStaffName.visibility = android.view.View.VISIBLE
+                tvErrorStaffName.visibility = View.VISIBLE
                 hasError = true
             }
             if (email.isEmpty()) {
                 etStaffEmail.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorStaffEmail.text = "Email is required"
-                tvErrorStaffEmail.visibility = android.view.View.VISIBLE
+                tvErrorStaffEmail.visibility = View.VISIBLE
                 hasError = true
             }
             if (password.length < 8) {
                 etStaffPassword.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorStaffPassword.text = "Password must be at least 8 characters"
-                tvErrorStaffPassword.visibility = android.view.View.VISIBLE
+                tvErrorStaffPassword.visibility = View.VISIBLE
                 hasError = true
             }
             if (hasError) return@setOnClickListener
@@ -213,11 +218,14 @@ class AdminPanelActivity : AppCompatActivity() {
                     )
                 }
                 staffAdapter.updateData(staff)
+                findViewById<TextView>(R.id.tvStaffEmptyState).visibility =
+                    if (staff.isEmpty()) View.VISIBLE else View.GONE
             }
-        staffAdapter.updateData(staff)
-        findViewById<TextView>(R.id.tvStaffEmptyState).visibility =
-            if (staff.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
     }
+
+    // ---------------------------------------------------------------
+    // Client -> accountant assignment (override / fallback path)
+    // ---------------------------------------------------------------
 
     private fun setupClientAssignmentSection() {
         val spinnerClient = findViewById<Spinner>(R.id.spinnerAssignClient)
@@ -282,6 +290,8 @@ class AdminPanelActivity : AppCompatActivity() {
                     )
                 }
                 clientAdapter.updateData(clientListItems)
+                findViewById<TextView>(R.id.tvClientsEmptyState).visibility =
+                    if (clientListItems.isEmpty()) View.VISIBLE else View.GONE
             }
     }
 
@@ -301,6 +311,10 @@ class AdminPanelActivity : AppCompatActivity() {
             }
     }
 
+    // ---------------------------------------------------------------
+    // Permissions matrix (static reference)
+    // ---------------------------------------------------------------
+
     private fun setupPermissionsSection() {
         val rvPermissions = findViewById<RecyclerView>(R.id.rvPermissions)
         rvPermissions.layoutManager = LinearLayoutManager(this)
@@ -317,6 +331,10 @@ class AdminPanelActivity : AppCompatActivity() {
 
         rvPermissions.adapter = PermissionAdapter(permissions)
     }
+
+    // ---------------------------------------------------------------
+    // Audit log
+    // ---------------------------------------------------------------
 
     private fun setupAuditLogSection() {
         val rvAuditLog = findViewById<RecyclerView>(R.id.rvAuditLog)
@@ -342,9 +360,13 @@ class AdminPanelActivity : AppCompatActivity() {
                     )
                 }
                 auditAdapter.updateData(entries)
-                tvAuditEmptyState.visibility = if (entries.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                tvAuditEmptyState.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
             }
     }
+
+    // ---------------------------------------------------------------
+    // System health
+    // ---------------------------------------------------------------
 
     private fun setupSystemHealthSection() {
         setStat(R.id.statStorageUsed, "Storage Used", "Not available")
@@ -385,25 +407,99 @@ class AdminPanelActivity : AppCompatActivity() {
 
         val rvServiceStatus = findViewById<RecyclerView>(R.id.rvServiceStatus)
         rvServiceStatus.layoutManager = LinearLayoutManager(this)
-        rvServiceStatus.adapter = ServiceStatusAdapter(
-            listOf(
-                ServiceStatus("Firestore Database", "Not monitored", false),
-                ServiceStatus("Firebase Storage", "Not monitored", false),
-                ServiceStatus("Authentication Service", "Not monitored", false)
+        fetchGcpServiceStatus()
+    }
+
+    /**
+     * Checks Google Cloud's public, unauthenticated incidents feed for any
+     * ONGOING incident (no "end" timestamp) affecting Firestore or Cloud
+     * Storage. Firebase Authentication incidents are tracked on a separate
+     * dashboard (status.firebase.google.com) with no confirmed public JSON
+     * feed, so that row points to the dashboard instead of guessing.
+     */
+    private fun fetchGcpServiceStatus() {
+        Thread {
+            var firestoreDisrupted: Boolean? = null
+            var storageDisrupted: Boolean? = null
+
+            try {
+                val url = java.net.URL("https://status.cloud.google.com/incidents.json")
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8000
+                connection.readTimeout = 8000
+                connection.requestMethod = "GET"
+
+                if (connection.responseCode == 200) {
+                    val body = connection.inputStream.bufferedReader().use { it.readText() }
+                    val incidents = org.json.JSONArray(body)
+                    firestoreDisrupted = false
+                    storageDisrupted = false
+
+                    for (i in 0 until incidents.length()) {
+                        val incident = incidents.getJSONObject(i)
+                        val isOngoing = !incident.has("end") || incident.isNull("end") ||
+                                incident.optString("end", "").isEmpty()
+                        if (!isOngoing) continue
+
+                        val affectedProducts = incident.optJSONArray("affected_products") ?: continue
+                        for (j in 0 until affectedProducts.length()) {
+                            val name = affectedProducts.getJSONObject(j).optString("title", "")
+                            if (name.contains("Firestore", ignoreCase = true)) firestoreDisrupted = true
+                            if (name.contains("Cloud Storage", ignoreCase = true)) storageDisrupted = true
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Network failure or parse error: leave both null (unknown)
+                // rather than guessing a status.
+            }
+
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                updateServiceStatusList(firestoreDisrupted, storageDisrupted)
+            }
+        }.start()
+    }
+
+    private fun updateServiceStatusList(firestoreDisrupted: Boolean?, storageDisrupted: Boolean?) {
+        val rvServiceStatus = findViewById<RecyclerView>(R.id.rvServiceStatus)
+        val services = listOf(
+            ServiceStatus(
+                "Firestore Database",
+                when (firestoreDisrupted) {
+                    true -> "Disrupted"
+                    false -> "Operational"
+                    null -> "Unknown (check failed)"
+                },
+                firestoreDisrupted == false
+            ),
+            ServiceStatus(
+                "Firebase Storage",
+                when (storageDisrupted) {
+                    true -> "Disrupted"
+                    false -> "Operational"
+                    null -> "Unknown (check failed)"
+                },
+                storageDisrupted == false
+            ),
+            ServiceStatus(
+                "Authentication Service",
+                "See status.firebase.google.com",
+                true
             )
         )
-        )
+        rvServiceStatus.adapter = ServiceStatusAdapter(services)
     }
 
     private fun setStat(includeId: Int, label: String, value: String) {
-        val container = findViewById<android.view.View>(includeId)
+        val container = findViewById<View>(includeId)
         container.findViewById<TextView>(R.id.tvStatLabel).text = label
         container.findViewById<TextView>(R.id.tvStatValue).text = value
     }
 
     private fun colorStatBar(includeId: Int, colorRes: Int) {
-        val container = findViewById<android.view.View>(includeId)
-        container.findViewById<android.view.View>(R.id.statAccentBar)
+        val container = findViewById<View>(includeId)
+        container.findViewById<View>(R.id.statAccentBar)
             .setBackgroundColor(ContextCompat.getColor(this, colorRes))
     }
 }

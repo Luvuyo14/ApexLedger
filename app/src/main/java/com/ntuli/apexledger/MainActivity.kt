@@ -3,8 +3,10 @@ package com.ntuli.apexledger
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -32,12 +34,13 @@ class MainActivity : AppCompatActivity() {
         val tvErrorEmail = findViewById<TextView>(R.id.tvErrorEmail)
         val tvErrorPassword = findViewById<TextView>(R.id.tvErrorPassword)
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
+        val progressLogin = findViewById<ProgressBar>(R.id.progressLogin)
 
         btnLogin.setOnClickListener {
             etEmail.setBackgroundResource(R.drawable.bg_input_field)
             etPassword.setBackgroundResource(R.drawable.bg_input_field)
-            tvErrorEmail.visibility = android.view.View.GONE
-            tvErrorPassword.visibility = android.view.View.GONE
+            tvErrorEmail.visibility = View.GONE
+            tvErrorPassword.visibility = View.GONE
             tvStatus.text = ""
 
             val email = etEmail.text.toString().trim()
@@ -47,30 +50,26 @@ class MainActivity : AppCompatActivity() {
             if (email.isEmpty()) {
                 etEmail.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorEmail.text = "Email is required"
-                tvErrorEmail.visibility = android.view.View.VISIBLE
+                tvErrorEmail.visibility = View.VISIBLE
                 hasError = true
             }
             if (password.isEmpty()) {
                 etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorPassword.text = "Password is required"
-                tvErrorPassword.visibility = android.view.View.VISIBLE
+                tvErrorPassword.visibility = View.VISIBLE
                 hasError = true
             }
             if (hasError) return@setOnClickListener
 
-            val progressLogin = findViewById<android.widget.ProgressBar>(R.id.progressLogin)
-
+            // Lock the button and show a spinner so a second tap can't start
+            // a second login while the first is still in flight.
             btnLogin.isEnabled = false
-            progressLogin.visibility = android.view.View.VISIBLE
-
-
+            progressLogin.visibility = View.VISIBLE
 
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
                     val uid = result.user?.uid
                     if (uid == null) {
-                        // Should not normally happen, but never guess a role when we
-                        // don't even have a reliable uid. Fail safely.
                         auth.signOut()
                         showLoginError(etEmail, etPassword, tvStatus, "Something went wrong signing you in. Please try again.")
                         return@addOnSuccessListener
@@ -79,8 +78,6 @@ class MainActivity : AppCompatActivity() {
                     db.collection("users").document(uid).get()
                         .addOnSuccessListener { doc ->
                             if (!doc.exists()) {
-                                // Auth account exists but has no matching Firestore profile —
-                                // a partially created account. Never default this to "client".
                                 auth.signOut()
                                 showLoginError(
                                     etEmail, etPassword, tvStatus,
@@ -91,8 +88,6 @@ class MainActivity : AppCompatActivity() {
 
                             val role = doc.getString("role")
                             if (role.isNullOrEmpty()) {
-                                // A role must always be present. Missing role is a data
-                                // problem, not a reason to silently treat someone as a client.
                                 auth.signOut()
                                 showLoginError(
                                     etEmail, etPassword, tvStatus,
@@ -101,10 +96,6 @@ class MainActivity : AppCompatActivity() {
                                 return@addOnSuccessListener
                             }
 
-                            AuditLogger.logEvent(
-                                if (role == "client") "Client" else "User", "Login"
-                            )
-
                             val destination = when (role) {
                                 "client" -> DashboardActivity::class.java
                                 "accountant", "manager", "admin" -> StaffDashboardActivity::class.java
@@ -112,7 +103,6 @@ class MainActivity : AppCompatActivity() {
                             }
 
                             if (destination == null) {
-                                // Unrecognized role value — don't guess which dashboard is safe.
                                 auth.signOut()
                                 showLoginError(
                                     etEmail, etPassword, tvStatus,
@@ -121,13 +111,14 @@ class MainActivity : AppCompatActivity() {
                                 return@addOnSuccessListener
                             }
 
+                            AuditLogger.logEvent(
+                                if (role == "client") "Client" else "User", "Login"
+                            )
+
                             startActivity(Intent(this, destination))
                             finish()
                         }
                         .addOnFailureListener { e ->
-                            // Network/Firestore error reading the profile. Do NOT fall back
-                            // to the client dashboard — that would hide a real problem from
-                            // the user and could put a staff member on the wrong screen.
                             auth.signOut()
                             showLoginError(
                                 etEmail, etPassword, tvStatus,
@@ -155,11 +146,12 @@ class MainActivity : AppCompatActivity() {
         etPassword.setBackgroundResource(R.drawable.bg_input_field_error)
         tvStatus.setTextColor(0xFFD32F2F.toInt())
         tvStatus.text = message
+        resetLoginButton()
     }
 
     private fun resetLoginButton() {
         findViewById<Button>(R.id.btnLogin).isEnabled = true
-        findViewById<android.widget.ProgressBar>(R.id.progressLogin).visibility = android.view.View.GONE
+        findViewById<ProgressBar>(R.id.progressLogin).visibility = View.GONE
     }
 
     private fun showForgotPasswordDialog() {
