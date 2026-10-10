@@ -1,5 +1,6 @@
 package com.ntuli.apexledger
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -33,14 +34,21 @@ class DocumentsActivity : AppCompatActivity() {
     private val categories = listOf("tax_return", "payroll", "bookkeeping", "advisory", "other")
     private var pendingUri: Uri? = null
 
-    private val maxFileSizeBytes = 10L * 1024 * 1024 // 10 MB
-    private val allowedMimeTypes = arrayOf("application/pdf", "image/*")
+    // Matches the "max 25MB" text shown in the upload dropzone
+    private val maxFileSizeBytes = 25L * 1024 * 1024
 
     private val pickFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
             pendingUri = uri
+            // Keep read access even if the app is backgrounded between
+            // picking the file and tapping Upload.
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) { /* some providers don't support it */ }
             Toast.makeText(this, "File selected. Tap 'Upload Securely' to continue.", Toast.LENGTH_SHORT).show()
         }
     }
@@ -70,7 +78,7 @@ class DocumentsActivity : AppCompatActivity() {
         rv.adapter = adapter
 
         uploadDropzone.setOnClickListener {
-            pickFileLauncher.launch(allowedMimeTypes)
+            pickFileLauncher.launch(arrayOf("application/pdf", "image/*"))
         }
 
         btnUploadSecurely.setOnClickListener {
@@ -83,6 +91,11 @@ class DocumentsActivity : AppCompatActivity() {
         }
 
         loadDocuments(tvEmptyState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadDocuments(findViewById(R.id.tvEmptyState))
     }
 
     private fun loadDocuments(tvEmptyState: TextView) {
@@ -110,12 +123,16 @@ class DocumentsActivity : AppCompatActivity() {
                 adapter.updateData(docs)
                 tvEmptyState.visibility = if (docs.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
             }
+            .addOnFailureListener { e ->
+                tvEmptyState.visibility = android.view.View.VISIBLE
+                tvEmptyState.text = "Couldn't load documents: ${e.message}"
+            }
     }
 
     private fun uploadDocument(uri: Uri, category: String) {
         val uid = auth.currentUser?.uid ?: return
 
-        // Validate type
+        // Validate type (this is what refuses .txt files)
         val mimeType = contentResolver.getType(uri) ?: ""
         val isAllowedType = mimeType == "application/pdf" || mimeType.startsWith("image/")
         if (!isAllowedType) {
@@ -123,7 +140,6 @@ class DocumentsActivity : AppCompatActivity() {
             return
         }
 
-        // Read display name + size in one query
         var fileSizeBytes = 0L
         var displayName: String? = null
         contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -136,7 +152,7 @@ class DocumentsActivity : AppCompatActivity() {
         }
 
         if (fileSizeBytes > maxFileSizeBytes) {
-            Toast.makeText(this, "File is too large. Maximum size is 10MB", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "File is too large. Maximum size is 25MB", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -149,6 +165,9 @@ class DocumentsActivity : AppCompatActivity() {
             .whereEqualTo("clientId", uid)
             .whereEqualTo("documentCategory", category)
             .get()
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Couldn't check existing documents: ${e.message}", Toast.LENGTH_LONG).show()
+            }
             .addOnSuccessListener { existingResult ->
                 val existingDocs = existingResult.documents
                 val supersededIds = existingDocs.flatMap { d ->
@@ -165,52 +184,64 @@ class DocumentsActivity : AppCompatActivity() {
                 }
 
                 storageRef.putFile(uri)
-                    .addOnSuccessListener {
-                        storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
-                            val docData = hashMapOf(
-                                "clientId" to uid,
-                                "fileName" to fileName,
-                                "filePath" to downloadUrl.toString(),
-                                "documentCategory" to category,
-                                "reviewStatus" to "pending",
-                                "version" to newVersion,
-                                "previousVersionIds" to previousIds,
-                                "uploadTimestamp" to com.google.firebase.Timestamp.now()
-                            )
-                            db.collection("documents").add(docData)
-                                .addOnSuccessListener {
-                                    val message = if (newVersion > 1) {
-                                        "Upload complete! This is version $newVersion."
-                                    } else {
-                                        "Upload complete!"
-                                    }
-                                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-
-                                    AuditLogger.logEvent(
-                                        "Client", "Upload Document",
-                                        "$fileName (version $newVersion, category: $category)"
-                                    )
-
-                                    db.collection("users").document(uid).get()
-                                        .addOnSuccessListener { clientDoc ->
-                                            val accountantId = clientDoc.getString("assignedAccountantId")
-                                            if (!accountantId.isNullOrEmpty()) {
-                                                NotificationHelper.notify(
-                                                    recipientUid = accountantId,
-                                                    type = "document_upload",
-                                                    title = "New document to review",
-                                                    body = "$fileName was uploaded (version $newVersion)."
-                                                )
-                                            }
-                                        }
-
-                                    pendingUri = null
-                                    loadDocuments(findViewById(R.id.tvEmptyState))
-                                }
-                        }
-                    }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Upload failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        // NOW the real Storage error is visible instead of a silent dead end
+                        Toast.makeText(
+                            this,
+                            "Upload failed: ${e.message}. Check your connection and Storage rules.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    .addOnSuccessListener {
+                        storageRef.downloadUrl
+                            .addOnFailureListener { e ->
+                                Toast.makeText(this, "File uploaded but couldn't get its link: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                            .addOnSuccessListener { downloadUrl ->
+                                val docData = hashMapOf(
+                                    "clientId" to uid,
+                                    "fileName" to fileName,
+                                    "filePath" to downloadUrl.toString(),
+                                    "documentCategory" to category,
+                                    "reviewStatus" to "pending",
+                                    "version" to newVersion,
+                                    "previousVersionIds" to previousIds,
+                                    "uploadTimestamp" to com.google.firebase.Timestamp.now()
+                                )
+                                db.collection("documents").add(docData)
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(this, "File uploaded but registration failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                    .addOnSuccessListener {
+                                        val message = if (newVersion > 1) {
+                                            "Upload complete! This is version $newVersion."
+                                        } else {
+                                            "Upload complete!"
+                                        }
+                                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+                                        AuditLogger.logEvent(
+                                            "Client", "Upload Document",
+                                            "$fileName (version $newVersion, category: $category)"
+                                        )
+
+                                        db.collection("users").document(uid).get()
+                                            .addOnSuccessListener { clientDoc ->
+                                                val accountantId = clientDoc.getString("assignedAccountantId")
+                                                if (!accountantId.isNullOrEmpty()) {
+                                                    NotificationHelper.notify(
+                                                        recipientUid = accountantId,
+                                                        type = "document_upload",
+                                                        title = "New document to review",
+                                                        body = "$fileName was uploaded (version $newVersion)."
+                                                    )
+                                                }
+                                            }
+
+                                        pendingUri = null
+                                        loadDocuments(findViewById(R.id.tvEmptyState))
+                                    }
+                            }
                     }
             }
     }

@@ -105,6 +105,9 @@ class AdminPanelActivity : AppCompatActivity() {
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
         val rvStaff = findViewById<RecyclerView>(R.id.rvStaff)
 
+        // Same rule as client registration: 8+ chars, 1 uppercase, 1 number
+        val passwordRegex = Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$")
+
         spinnerRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles)
         spinnerDepartment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, departments)
 
@@ -118,9 +121,9 @@ class AdminPanelActivity : AppCompatActivity() {
             etStaffName.setBackgroundResource(R.drawable.bg_input_field)
             etStaffEmail.setBackgroundResource(R.drawable.bg_input_field)
             etStaffPassword.setBackgroundResource(R.drawable.bg_input_field)
-            tvErrorStaffName.visibility = View.GONE
-            tvErrorStaffEmail.visibility = View.GONE
-            tvErrorStaffPassword.visibility = View.GONE
+            tvErrorStaffName.visibility = android.view.View.GONE
+            tvErrorStaffEmail.visibility = android.view.View.GONE
+            tvErrorStaffPassword.visibility = android.view.View.GONE
             tvStatus.text = ""
 
             val name = etStaffName.text.toString().trim()
@@ -133,19 +136,24 @@ class AdminPanelActivity : AppCompatActivity() {
             if (name.isEmpty()) {
                 etStaffName.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorStaffName.text = "Full name is required"
-                tvErrorStaffName.visibility = View.VISIBLE
+                tvErrorStaffName.visibility = android.view.View.VISIBLE
                 hasError = true
             }
             if (email.isEmpty()) {
                 etStaffEmail.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorStaffEmail.text = "Email is required"
-                tvErrorStaffEmail.visibility = View.VISIBLE
+                tvErrorStaffEmail.visibility = android.view.View.VISIBLE
+                hasError = true
+            } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                etStaffEmail.setBackgroundResource(R.drawable.bg_input_field_error)
+                tvErrorStaffEmail.text = "Enter a valid email address"
+                tvErrorStaffEmail.visibility = android.view.View.VISIBLE
                 hasError = true
             }
-            if (password.length < 8) {
+            if (!passwordRegex.matches(password)) {
                 etStaffPassword.setBackgroundResource(R.drawable.bg_input_field_error)
-                tvErrorStaffPassword.text = "Password must be at least 8 characters"
-                tvErrorStaffPassword.visibility = View.VISIBLE
+                tvErrorStaffPassword.text = "Password needs 8+ chars, 1 uppercase letter and 1 number"
+                tvErrorStaffPassword.visibility = android.view.View.VISIBLE
                 hasError = true
             }
             if (hasError) return@setOnClickListener

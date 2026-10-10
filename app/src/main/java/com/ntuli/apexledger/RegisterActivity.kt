@@ -1,7 +1,8 @@
 package com.ntuli.apexledger
 
-import android.content.Intent
 import android.os.Bundle
+import android.util.Patterns
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
@@ -9,8 +10,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
-import android.util.Patterns
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -18,6 +19,9 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
 
     private val servicePreferences = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit")
+
+    // Min 8 chars, at least 1 uppercase letter, at least 1 digit
+    private val passwordRegex = Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$")
 
     private lateinit var etFullName: EditText
     private lateinit var etEmail: EditText
@@ -62,9 +66,7 @@ class RegisterActivity : AppCompatActivity() {
             this, android.R.layout.simple_spinner_dropdown_item, servicePreferences
         )
 
-        tvBackToLogin.setOnClickListener {
-            finish()
-        }
+        tvBackToLogin.setOnClickListener { finish() }
 
         btnRegisterClient.setOnClickListener {
             clearAllFieldErrors()
@@ -99,8 +101,14 @@ class RegisterActivity : AppCompatActivity() {
                 showFieldError(etAddress, tvErrorAddress, "Address is required")
                 hasError = true
             }
-            if (password.length < 8) {
-                showFieldError(etPassword, tvErrorPassword, "Password must be at least 8 characters")
+            if (password.isEmpty()) {
+                showFieldError(etPassword, tvErrorPassword, "Password is required")
+                hasError = true
+            } else if (!passwordRegex.matches(password)) {
+                showFieldError(
+                    etPassword, tvErrorPassword,
+                    "Password needs 8+ chars, 1 uppercase letter and 1 number"
+                )
                 hasError = true
             }
             if (confirmPassword != password) {
@@ -110,13 +118,18 @@ class RegisterActivity : AppCompatActivity() {
 
             if (hasError) return@setOnClickListener
 
+            btnRegisterClient.isEnabled = false
+
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
-                    val uid = result.user?.uid ?: return@addOnSuccessListener
+                    val newUser = result.user
+                    if (newUser == null) {
+                        btnRegisterClient.isEnabled = true
+                        tvStatus.setTextColor(0xFFD32F2F.toInt())
+                        tvStatus.text = "Registration failed. Please try again."
+                        return@addOnSuccessListener
+                    }
 
-                    // Duty routing: find the accountant whose department matches this
-                    // client's chosen service preference, per the routing rule (no
-                    // admin hand-off — client queries go straight to the owning duty).
                     val dutyKeyword = when (servicePreference) {
                         "tax_return" -> "Taxation"
                         "payroll" -> "Payroll"
@@ -149,39 +162,68 @@ class RegisterActivity : AppCompatActivity() {
                                 "created_at" to com.google.firebase.Timestamp.now()
                             )
 
-                            db.collection("users").document(uid).set(profile)
+                            db.collection("users").document(newUser.uid).set(profile)
                                 .addOnSuccessListener {
+                                    btnRegisterClient.isEnabled = true
+                                    // Sign out so the person logs in explicitly,
+                                    // matching the "You can now sign in" message.
+                                    auth.signOut()
                                     tvStatus.setTextColor(0xFF2E7D32.toInt())
                                     tvStatus.text = if (matchedAccountant != null) {
-                                        "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}."
+                                        "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}. You can now sign in."
                                     } else {
-                                        "Account created! No accountant currently handles this duty — an admin will assign one shortly."
+                                        "Account created! No accountant currently handles this duty — an admin will assign one shortly. You can now sign in."
                                     }
                                 }
                                 .addOnFailureListener { e ->
+                                    rollbackAccount(newUser)
+                                    btnRegisterClient.isEnabled = true
                                     tvStatus.setTextColor(0xFFD32F2F.toInt())
-                                    tvStatus.text = "Profile save failed: ${e.message}"
+                                    tvStatus.text = "Could not save your profile, so the account was not created: ${e.message}. Please try again."
                                 }
+                        }
+                        .addOnFailureListener { e ->
+                            rollbackAccount(newUser)
+                            btnRegisterClient.isEnabled = true
+                            tvStatus.setTextColor(0xFFD32F2F.toInt())
+                            tvStatus.text = "Could not complete registration, so the account was not created: ${e.message}. Please try again."
                         }
                 }
                 .addOnFailureListener { e ->
-                    tvStatus.setTextColor(0xFFD32F2F.toInt())
-                    tvStatus.text = "Registration failed: ${e.message}"
+                    btnRegisterClient.isEnabled = true
+                    if (e is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                        showFieldError(etEmail, tvErrorEmail, "An account with this email already exists")
+                    } else {
+                        tvStatus.setTextColor(0xFFD32F2F.toInt())
+                        tvStatus.text = "Registration failed: ${e.message}"
+                    }
                 }
         }
+    }
+
+    /**
+     * Removes a just-created Auth account when the rest of registration
+     * failed, so the person isn't left with a login that has no profile
+     * (which would block them from simply trying again).
+     */
+    private fun rollbackAccount(user: FirebaseUser) {
+        user.delete().addOnCompleteListener { auth.signOut() }
     }
 
     private fun showFieldError(field: EditText, errorLabel: TextView, message: String) {
         field.setBackgroundResource(R.drawable.bg_input_field_error)
         errorLabel.text = message
-        errorLabel.visibility = android.view.View.VISIBLE
+        errorLabel.visibility = View.VISIBLE
     }
 
     private fun clearAllFieldErrors() {
         val fields = listOf(etFullName, etEmail, etPhone, etAddress, etPassword, etConfirmPassword)
-        val errorLabels = listOf(tvErrorFullName, tvErrorEmail, tvErrorPhone, tvErrorAddress, tvErrorPassword, tvErrorConfirmPassword)
+        val errorLabels = listOf(
+            tvErrorFullName, tvErrorEmail, tvErrorPhone,
+            tvErrorAddress, tvErrorPassword, tvErrorConfirmPassword
+        )
 
         fields.forEach { it.setBackgroundResource(R.drawable.bg_input_field) }
-        errorLabels.forEach { it.visibility = android.view.View.GONE }
+        errorLabels.forEach { it.visibility = View.GONE }
     }
 }

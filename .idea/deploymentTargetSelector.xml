@@ -4,11 +4,11 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-10-07T07:49:44.971487Z">
+        <DropdownSelection timestamp="2026-10-09T18:47:35.481603400Z">
           <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\luvuyo\.android\avd\Small_Phone.avd" />
-            </handle>
+            <template>
+              <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=pa3q/36" />
+            </template>
           </Target>
         </DropdownSelection>
         <DialogSelection>

@@ -61,8 +61,6 @@ class MainActivity : AppCompatActivity() {
             }
             if (hasError) return@setOnClickListener
 
-            // Lock the button and show a spinner so a second tap can't start
-            // a second login while the first is still in flight.
             btnLogin.isEnabled = false
             progressLogin.visibility = View.VISIBLE
 
@@ -79,20 +77,14 @@ class MainActivity : AppCompatActivity() {
                         .addOnSuccessListener { doc ->
                             if (!doc.exists()) {
                                 auth.signOut()
-                                showLoginError(
-                                    etEmail, etPassword, tvStatus,
-                                    "Your account setup is incomplete. Please contact support."
-                                )
+                                showLoginError(etEmail, etPassword, tvStatus, "Your account setup is incomplete. Please contact support.")
                                 return@addOnSuccessListener
                             }
 
                             val role = doc.getString("role")
                             if (role.isNullOrEmpty()) {
                                 auth.signOut()
-                                showLoginError(
-                                    etEmail, etPassword, tvStatus,
-                                    "Your account is missing role information. Please contact support."
-                                )
+                                showLoginError(etEmail, etPassword, tvStatus, "Your account is missing role information. Please contact support.")
                                 return@addOnSuccessListener
                             }
 
@@ -104,26 +96,18 @@ class MainActivity : AppCompatActivity() {
 
                             if (destination == null) {
                                 auth.signOut()
-                                showLoginError(
-                                    etEmail, etPassword, tvStatus,
-                                    "Your account role is not recognized. Please contact support."
-                                )
+                                showLoginError(etEmail, etPassword, tvStatus, "Your account role is not recognized. Please contact support.")
                                 return@addOnSuccessListener
                             }
 
-                            AuditLogger.logEvent(
-                                if (role == "client") "Client" else "User", "Login"
-                            )
+                            AuditLogger.logEvent(if (role == "client") "Client" else "User", "Login")
 
                             startActivity(Intent(this, destination))
                             finish()
                         }
                         .addOnFailureListener { e ->
                             auth.signOut()
-                            showLoginError(
-                                etEmail, etPassword, tvStatus,
-                                "Could not verify your account right now: ${e.message}. Please check your connection and try again."
-                            )
+                            showLoginError(etEmail, etPassword, tvStatus, "Could not verify your account right now: ${e.message}. Please check your connection and try again.")
                         }
                 }
                 .addOnFailureListener { e ->
@@ -157,6 +141,7 @@ class MainActivity : AppCompatActivity() {
     private fun showForgotPasswordDialog() {
         val etResetEmail = EditText(this)
         etResetEmail.hint = "Enter your account email"
+        etResetEmail.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
         etResetEmail.setPadding(48, 32, 48, 0)
 
         AlertDialog.Builder(this)
@@ -165,18 +150,31 @@ class MainActivity : AppCompatActivity() {
             .setView(etResetEmail)
             .setPositiveButton("Send Reset Link") { _, _ ->
                 val email = etResetEmail.text.toString().trim()
+
                 if (email.isEmpty()) {
                     Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
 
+                // No Firestore lookup here: nobody is signed in on this screen,
+                // so the rules (correctly) deny reading the users collection.
+                // Firebase only emails addresses that exist in Authentication,
+                // and deliberately reports success either way so the screen
+                // can't be used to discover which emails have accounts.
                 auth.sendPasswordResetEmail(email)
                     .addOnSuccessListener {
-                        AuditLogger.logEvent("Client", "Password Reset Requested", email)
-                        Toast.makeText(this, "Reset link sent! Check your email.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this,
+                            "If an account exists for $email, a reset link has been sent. Check your inbox and spam folder.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Could not send reset email: ${e.message}", Toast.LENGTH_LONG).show()
                     }
             }
             .setNegativeButton("Cancel", null)

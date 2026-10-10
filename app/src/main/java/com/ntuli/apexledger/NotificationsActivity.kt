@@ -1,6 +1,7 @@
 package com.ntuli.apexledger
 
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -42,6 +43,11 @@ class NotificationsActivity : AppCompatActivity() {
         loadNotifications(tvEmptyState)
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadNotifications(findViewById(R.id.tvEmptyState))
+    }
+
     private fun loadNotifications(tvEmptyState: TextView) {
         val uid = auth.currentUser?.uid ?: return
         val sdf = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
@@ -51,6 +57,12 @@ class NotificationsActivity : AppCompatActivity() {
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .limit(50)
             .get()
+            .addOnFailureListener { e ->
+                // Previously this failed silently (missing composite index) and
+                // the screen just looked empty. Now the real reason is shown.
+                tvEmptyState.visibility = View.VISIBLE
+                tvEmptyState.text = "Couldn't load notifications: ${e.message}"
+            }
             .addOnSuccessListener { result ->
                 val notifications = result.documents.map { d ->
                     AppNotification(
@@ -63,7 +75,7 @@ class NotificationsActivity : AppCompatActivity() {
                     )
                 }
                 adapter.updateData(notifications)
-                tvEmptyState.visibility = if (notifications.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                tvEmptyState.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
             }
     }
 

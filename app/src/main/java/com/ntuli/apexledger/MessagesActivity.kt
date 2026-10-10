@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.MessageThread
 import com.ntuli.apexledger.ui.ThreadAdapter
+import com.ntuli.apexledger.util.NotificationHelper
 
 class MessagesActivity : AppCompatActivity() {
 
@@ -106,11 +107,26 @@ class MessagesActivity : AppCompatActivity() {
                         "senderId" to uid,
                         "messageBody" to firstMessage,
                         "isUrgent" to isUrgent,
+                        "readBy" to listOf(uid),
                         "sentTimestamp" to com.google.firebase.Timestamp.now()
                     )
                     db.collection("threads").document(ref.id)
                         .collection("messages")
                         .add(messageData)
+
+                    // Notify the assigned accountant about the new thread
+                    db.collection("users").document(uid).get()
+                        .addOnSuccessListener { clientDoc ->
+                            val accountantId = clientDoc.getString("assignedAccountantId")
+                            if (!accountantId.isNullOrEmpty()) {
+                                NotificationHelper.notify(
+                                    recipientUid = accountantId,
+                                    type = if (isUrgent) "urgent_message" else "new_message",
+                                    title = if (isUrgent) "Urgent message from client" else "New message from client",
+                                    body = "$subject — ${firstMessage.take(80)}"
+                                )
+                            }
+                        }
                 }
                 val intent = Intent(this, ConversationActivity::class.java)
                 intent.putExtra("threadId", ref.id)
