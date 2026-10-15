@@ -17,25 +17,24 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import com.ntuli.apexledger.ui.Document
 import com.ntuli.apexledger.ui.DocumentAdapter
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.Labels
 import com.ntuli.apexledger.util.NotificationHelper
 
 class DocumentsActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
-    private lateinit var storage: FirebaseStorage
     private lateinit var adapter: DocumentAdapter
     private lateinit var spinnerCategory: Spinner
 
     private val categories = listOf("tax_return", "payroll", "bookkeeping", "advisory", "other")
     private var pendingUri: Uri? = null
 
-    // Matches the "max 25MB" text shown in the upload dropzone
-    private val maxFileSizeBytes = 25L * 1024 * 1024
+    // Matches the "max 10MB" text shown in the upload dropzone
+    private val maxFileSizeBytes = 10L * 1024 * 1024
 
     private val pickFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -49,23 +48,23 @@ class DocumentsActivity : AppCompatActivity() {
                     uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } catch (_: SecurityException) { /* some providers don't support it */ }
-            Toast.makeText(this, "File selected. Tap 'Upload Securely' to continue.", Toast.LENGTH_SHORT).show()
+            com.ntuli.apexledger.util.Feedback.show(this, "File selected. Tap 'Upload Securely' to continue.")
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_documents)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
-        storage = FirebaseStorage.getInstance()
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
 
         spinnerCategory = findViewById(R.id.spinnerDocCategory)
-        spinnerCategory.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories)
+        spinnerCategory.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories.map { Labels.service(it) })
 
         val uploadDropzone = findViewById<LinearLayout>(R.id.uploadDropzone)
         val btnUploadSecurely = findViewById<MaterialButton>(R.id.btnUploadSecurely)
@@ -84,7 +83,7 @@ class DocumentsActivity : AppCompatActivity() {
         btnUploadSecurely.setOnClickListener {
             val uri = pendingUri
             if (uri == null) {
-                Toast.makeText(this, "Please select a file first", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Please select a file first")
             } else {
                 uploadDocument(uri, categories[spinnerCategory.selectedItemPosition])
             }
@@ -109,7 +108,7 @@ class DocumentsActivity : AppCompatActivity() {
                     (d.get("previousVersionIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                 }.toSet()
 
-                val latestDocs = allDocs.filter { it.id !in supersededIds }
+                val latestDocs = allDocs.filter { it.id !in supersededIds && it.getBoolean("uploadComplete") != false }
 
                 val docs = latestDocs.map { d ->
                     Document(
@@ -117,7 +116,9 @@ class DocumentsActivity : AppCompatActivity() {
                         fileName = d.getString("fileName") ?: "Untitled",
                         documentCategory = d.getString("documentCategory") ?: "other",
                         reviewStatus = d.getString("reviewStatus") ?: "pending",
-                        version = (d.getLong("version") ?: 1L).toInt()
+                        version = (d.getLong("version") ?: 1L).toInt(),
+                        dateLabel = d.getTimestamp("uploadTimestamp")?.toDate()
+                            ?.let { java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()).format(it) } ?: ""
                     )
                 }
                 adapter.updateData(docs)
@@ -133,13 +134,6 @@ class DocumentsActivity : AppCompatActivity() {
         val uid = auth.currentUser?.uid ?: return
 
         // Validate type (this is what refuses .txt files)
-        val mimeType = contentResolver.getType(uri) ?: ""
-        val isAllowedType = mimeType == "application/pdf" || mimeType.startsWith("image/")
-        if (!isAllowedType) {
-            Toast.makeText(this, "Only PDF and image files are allowed", Toast.LENGTH_LONG).show()
-            return
-        }
-
         var fileSizeBytes = 0L
         var displayName: String? = null
         contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -151,22 +145,36 @@ class DocumentsActivity : AppCompatActivity() {
             }
         }
 
+        // Some file managers report a vague type (or none), so fall back to the file extension
+        var mimeType = contentResolver.getType(uri) ?: ""
+        if (mimeType != "application/pdf" && !mimeType.startsWith("image/")) {
+            mimeType = when ((displayName ?: "").substringAfterLast('.', "").lowercase()) {
+                "pdf" -> "application/pdf"
+                "jpg", "jpeg" -> "image/jpeg"
+                "png" -> "image/png"
+                else -> ""
+            }
+        }
+        if (mimeType.isEmpty()) {
+            com.ntuli.apexledger.util.Feedback.show(this, "Only PDF, JPG and PNG files are allowed")
+            return
+        }
+
         if (fileSizeBytes > maxFileSizeBytes) {
-            Toast.makeText(this, "File is too large. Maximum size is 25MB", Toast.LENGTH_LONG).show()
+            com.ntuli.apexledger.util.Feedback.show(this, "File is too large. Maximum size is 10MB")
             return
         }
 
         val fileName = displayName ?: "document_${System.currentTimeMillis()}"
-        val storageRef = storage.reference.child("documents/$uid/$fileName")
 
-        Toast.makeText(this, "Uploading...", Toast.LENGTH_SHORT).show()
+        com.ntuli.apexledger.util.Feedback.show(this, "Uploading...")
 
         db.collection("documents")
             .whereEqualTo("clientId", uid)
             .whereEqualTo("documentCategory", category)
             .get()
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Couldn't check existing documents: ${e.message}", Toast.LENGTH_LONG).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Upload failed at step 1 (checking existing documents): ${describe(e)}")
             }
             .addOnSuccessListener { existingResult ->
                 val existingDocs = existingResult.documents
@@ -183,66 +191,161 @@ class DocumentsActivity : AppCompatActivity() {
                     emptyList()
                 }
 
-                storageRef.putFile(uri)
+                saveToFirestore(
+                    uri, uid, fileName, category, mimeType, fileSizeBytes,
+                    newVersion, previousIds
+                )
+            }
+    }
+
+    /**
+     * Free-plan storage: the file is cut into 512 KB pieces and saved as small documents under
+     * documents/{id}/chunks. The parent document is created first, then the pieces, and it is
+     * marked uploadComplete only when every piece has been written.
+     */
+    private fun saveToFirestore(
+        uri: Uri, uid: String, fileName: String, category: String, mimeType: String,
+        sizeFromProvider: Long, newVersion: Int, previousIds: List<String>
+    ) {
+        val btn = findViewById<MaterialButton>(R.id.btnUploadSecurely)
+        btn.isEnabled = false
+        btn.text = "Reading file..."
+
+        Thread {
+            val bytes = try {
+                contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            } catch (e: Exception) {
+                null
+            }
+            runOnUiThread {
+                if (bytes == null || bytes.isEmpty()) {
+                    resetUploadButton(btn)
+                    com.ntuli.apexledger.util.Feedback.show(this, "Could not read that file. Please pick it again.")
+                    return@runOnUiThread
+                }
+                if (bytes.size > maxFileSizeBytes) {
+                    resetUploadButton(btn)
+                    com.ntuli.apexledger.util.Feedback.show(this, "File is too large. Maximum size is 10MB")
+                    return@runOnUiThread
+                }
+                val chunkCount = (bytes.size + CHUNK_BYTES - 1) / CHUNK_BYTES
+                val docRef = db.collection("documents").document()
+                val docData = hashMapOf(
+                    "clientId" to uid,
+                    "fileName" to fileName,
+                    "filePath" to "",
+                    "storageType" to "firestore",
+                    "chunkCount" to chunkCount,
+                    "mimeType" to mimeType,
+                    "documentCategory" to category,
+                    "fileSizeBytes" to bytes.size.toLong(),
+                    "reviewStatus" to "pending",
+                    "version" to newVersion,
+                    "previousVersionIds" to previousIds,
+                    "uploadComplete" to false,
+                    "uploadTimestamp" to com.google.firebase.Timestamp.now()
+                )
+                btn.text = "Uploading 0%"
+                val noResponse = Runnable {
+                    com.ntuli.apexledger.util.Feedback.show(
+                        this, "Upload failed: no response from the server. Check your internet connection and try again."
+                    )
+                    resetUploadButton(btn)
+                }
+                btn.postDelayed(noResponse, 30000)
+                docRef.set(docData)
                     .addOnFailureListener { e ->
-                        // NOW the real Storage error is visible instead of a silent dead end
-                        Toast.makeText(
-                            this,
-                            "Upload failed: ${e.message}. Check your connection and Storage rules.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        btn.removeCallbacks(noResponse)
+                        resetUploadButton(btn)
+                        com.ntuli.apexledger.util.Feedback.show(this, "Upload failed at step 2 (saving the file record): ${describe(e)}")
                     }
                     .addOnSuccessListener {
-                        storageRef.downloadUrl
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "File uploaded but couldn't get its link: ${e.message}", Toast.LENGTH_LONG).show()
-                            }
-                            .addOnSuccessListener { downloadUrl ->
-                                val docData = hashMapOf(
-                                    "clientId" to uid,
-                                    "fileName" to fileName,
-                                    "filePath" to downloadUrl.toString(),
-                                    "documentCategory" to category,
-                                    "reviewStatus" to "pending",
-                                    "version" to newVersion,
-                                    "previousVersionIds" to previousIds,
-                                    "uploadTimestamp" to com.google.firebase.Timestamp.now()
-                                )
-                                db.collection("documents").add(docData)
-                                    .addOnFailureListener { e ->
-                                        Toast.makeText(this, "File uploaded but registration failed: ${e.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                    .addOnSuccessListener {
-                                        val message = if (newVersion > 1) {
-                                            "Upload complete! This is version $newVersion."
-                                        } else {
-                                            "Upload complete!"
-                                        }
-                                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-
-                                        AuditLogger.logEvent(
-                                            "Client", "Upload Document",
-                                            "$fileName (version $newVersion, category: $category)"
-                                        )
-
-                                        db.collection("users").document(uid).get()
-                                            .addOnSuccessListener { clientDoc ->
-                                                val accountantId = clientDoc.getString("assignedAccountantId")
-                                                if (!accountantId.isNullOrEmpty()) {
-                                                    NotificationHelper.notify(
-                                                        recipientUid = accountantId,
-                                                        type = "document_upload",
-                                                        title = "New document to review",
-                                                        body = "$fileName was uploaded (version $newVersion)."
-                                                    )
-                                                }
-                                            }
-
-                                        pendingUri = null
-                                        loadDocuments(findViewById(R.id.tvEmptyState))
+                        btn.removeCallbacks(noResponse)
+                        writeChunks(docRef, bytes, 0, chunkCount, btn) { error ->
+                            if (error != null) {
+                                docRef.delete()
+                                resetUploadButton(btn)
+                                com.ntuli.apexledger.util.Feedback.show(this, "Upload failed at step 3 (saving the file data): ${describe(error)}")
+                            } else {
+                                docRef.update("uploadComplete", true)
+                                    .addOnCompleteListener {
+                                        resetUploadButton(btn)
+                                        onUploadFinished(uid, fileName, category, newVersion)
                                     }
                             }
+                        }
                     }
             }
+        }.start()
+    }
+
+    private fun writeChunks(
+        docRef: com.google.firebase.firestore.DocumentReference, bytes: ByteArray,
+        from: Int, total: Int, btn: MaterialButton, onDone: (Exception?) -> Unit
+    ) {
+        if (from >= total) { onDone(null); return }
+        val to = minOf(from + 3, total)
+        val batch = db.batch()
+        for (i in from until to) {
+            val start = i * CHUNK_BYTES
+            val end = minOf(start + CHUNK_BYTES, bytes.size)
+            val b64 = android.util.Base64.encodeToString(bytes, start, end - start, android.util.Base64.NO_WRAP)
+            batch.set(
+                docRef.collection("chunks").document(i.toString().padStart(4, '0')),
+                hashMapOf("index" to i, "data" to b64)
+            )
+        }
+        batch.commit()
+            .addOnSuccessListener {
+                btn.text = "Uploading ${to * 100 / total}%"
+                writeChunks(docRef, bytes, to, total, btn, onDone)
+            }
+            .addOnFailureListener { e -> onDone(e) }
+    }
+
+    /** Turns a Firestore error into words a person can act on. */
+    private fun describe(e: Exception): String {
+        val code = (e as? com.google.firebase.firestore.FirebaseFirestoreException)?.code?.name
+        return when (code) {
+            "PERMISSION_DENIED" -> "PERMISSION_DENIED - the Firestore rules do not allow this yet. Publish the updated rules (documents and chunks) and try again."
+            "UNAVAILABLE" -> "UNAVAILABLE - cannot reach the server. Check your internet connection."
+            null -> e.message ?: "unknown error"
+            else -> "$code - ${e.message}"
+        }
+    }
+
+    private fun resetUploadButton(btn: MaterialButton) {
+        btn.isEnabled = true
+        btn.text = "Upload Securely"
+    }
+
+    private fun onUploadFinished(uid: String, fileName: String, category: String, newVersion: Int) {
+        val message = if (newVersion > 1) "Upload complete! This is version $newVersion." else "Upload complete!"
+        com.ntuli.apexledger.util.Feedback.show(this, message)
+
+        AuditLogger.logEvent(
+            "Client", "Upload Document",
+            "$fileName (version $newVersion, category: $category)"
+        )
+
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { clientDoc ->
+                val accountantId = clientDoc.getString("assignedAccountantId")
+                if (!accountantId.isNullOrEmpty()) {
+                    NotificationHelper.notify(
+                        recipientUid = accountantId,
+                        type = "document_upload",
+                        title = "New document to review",
+                        body = "$fileName was uploaded (version $newVersion)."
+                    )
+                }
+            }
+
+        pendingUri = null
+        loadDocuments(findViewById(R.id.tvEmptyState))
+    }
+
+    companion object {
+        private const val CHUNK_BYTES = 512 * 1024
     }
 }

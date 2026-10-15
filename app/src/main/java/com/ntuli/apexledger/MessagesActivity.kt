@@ -25,6 +25,7 @@ class MessagesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_messages)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -52,7 +53,7 @@ class MessagesActivity : AppCompatActivity() {
             val firstMessage = etNewMessageBody.text.toString().trim()
 
             if (subject.isEmpty()) {
-                Toast.makeText(this, "Please enter a subject", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Please enter a subject")
                 return@setOnClickListener
             }
 
@@ -83,8 +84,9 @@ class MessagesActivity : AppCompatActivity() {
                         isUrgent = d.getBoolean("isUrgent") ?: false
                     )
                 }
-                adapter.updateData(threads)
                 tvEmptyState.visibility = if (threads.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                adapter.updateData(threads)
+                com.ntuli.apexledger.util.Unread.mark(db, uid, threads) { adapter.updateData(it) }
             }
     }
 

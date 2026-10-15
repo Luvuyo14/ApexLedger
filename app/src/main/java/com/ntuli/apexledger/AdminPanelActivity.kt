@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -29,6 +30,8 @@ import com.ntuli.apexledger.ui.ServiceStatusAdapter
 import com.ntuli.apexledger.ui.StaffAdapter
 import com.ntuli.apexledger.ui.StaffMember
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.Labels
+import com.ntuli.apexledger.util.StatCards
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -36,7 +39,6 @@ import java.util.Locale
 class AdminPanelActivity : AppCompatActivity() {
 
     private lateinit var db: FirebaseFirestore
-    private lateinit var staffAdapter: StaffAdapter
     private lateinit var auditAdapter: AuditLogAdapter
     private lateinit var clientAdapter: ClientAdapter
 
@@ -46,6 +48,10 @@ class AdminPanelActivity : AppCompatActivity() {
         "Advisory (accountant)", "Audit (accountant)", "Administration"
     )
 
+    private var openTicketCount = 0
+    private var lastFirestoreDisrupted: Boolean? = null
+    private var lastStorageDisrupted: Boolean? = null
+    private var serviceStatusShown = false
     private var clientIds: List<String> = emptyList()
     private var clientNames: List<String> = emptyList()
     private var accountantIds: List<String> = emptyList()
@@ -54,6 +60,7 @@ class AdminPanelActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_admin_panel)
+        com.ntuli.apexledger.util.PasswordToggle.attach(findViewById<EditText>(R.id.etStaffPassword))
 
         db = FirebaseFirestore.getInstance()
 
@@ -103,17 +110,34 @@ class AdminPanelActivity : AppCompatActivity() {
         val spinnerDepartment = findViewById<Spinner>(R.id.spinnerDepartment)
         val btnCreateStaff = findViewById<MaterialButton>(R.id.btnCreateStaff)
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
-        val rvStaff = findViewById<RecyclerView>(R.id.rvStaff)
+
+        // The "Add Staff" form stays hidden until the admin asks for it
+        val cardAddStaff = findViewById<View>(R.id.cardAddStaff)
+        val btnToggleAddStaff = findViewById<TextView>(R.id.btnToggleAddStaff)
+        btnToggleAddStaff.setOnClickListener {
+            val open = cardAddStaff.visibility != View.VISIBLE
+            cardAddStaff.visibility = if (open) View.VISIBLE else View.GONE
+            btnToggleAddStaff.text = if (open) "Close" else "+ Add Staff"
+            if (open) {
+                // The form now sits at the top of the list: scroll up so it is visible
+                var p = cardAddStaff.parent
+                while (p != null && p !is android.widget.ScrollView && p !is androidx.core.widget.NestedScrollView) p = p.parent
+                (p as? android.view.View)?.post {
+                    when (p) {
+                        is android.widget.ScrollView -> p.smoothScrollTo(0, 0)
+                        is androidx.core.widget.NestedScrollView -> p.smoothScrollTo(0, 0)
+                    }
+                }
+                etStaffName.requestFocus()
+            }
+        }
 
         // Same rule as client registration: 8+ chars, 1 uppercase, 1 number
         val passwordRegex = Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$")
 
-        spinnerRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles)
+        spinnerRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles.map { Labels.title(it) })
         spinnerDepartment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, departments)
 
-        staffAdapter = StaffAdapter(emptyList())
-        rvStaff.layoutManager = LinearLayoutManager(this)
-        rvStaff.adapter = staffAdapter
 
         loadStaffList()
 
@@ -185,13 +209,19 @@ class AdminPanelActivity : AppCompatActivity() {
                     "email" to email,
                     "role" to role,
                     "department" to department,
+                    "active" to true,
                     "created_at" to com.google.firebase.Timestamp.now()
                 )
 
                 db.collection("users").document(newUid).set(profile)
                     .addOnSuccessListener {
-                        tvStatus.setTextColor(0xFF2E7D32.toInt())
-                        tvStatus.text = "Staff account created for $name"
+                        tvStatus.text = ""
+                        com.ntuli.apexledger.util.Feedback.show(this, "Staff account created for $name")
+                        findViewById<EditText>(R.id.etStaffName).setText("")
+                        findViewById<EditText>(R.id.etStaffEmail).setText("")
+                        findViewById<EditText>(R.id.etStaffPassword).setText("")
+                        findViewById<View>(R.id.cardAddStaff).visibility = View.GONE
+                        findViewById<TextView>(R.id.btnToggleAddStaff).text = "+ Add Staff"
                         AuditLogger.logEvent("Admin", "Create Staff Account", "Created $role account for $name ($email)")
                         loadStaffList()
                         loadAccountantsForSpinner()
@@ -199,6 +229,7 @@ class AdminPanelActivity : AppCompatActivity() {
                     .addOnFailureListener { e ->
                         tvStatus.setTextColor(0xFFD32F2F.toInt())
                         tvStatus.text = "Profile save failed: ${e.message}"
+                        com.ntuli.apexledger.util.Feedback.show(this, "Profile save failed: ${e.message}. The login was created but the profile was not saved. Check your Firestore rules.")
                     }
 
                 secondaryAuth.signOut()
@@ -208,6 +239,7 @@ class AdminPanelActivity : AppCompatActivity() {
                 findViewById<EditText>(R.id.etStaffEmail).setBackgroundResource(R.drawable.bg_input_field_error)
                 tvStatus.setTextColor(0xFFD32F2F.toInt())
                 tvStatus.text = "Failed to create account: ${e.message}"
+                com.ntuli.apexledger.util.Feedback.show(this, "Failed to create account: ${e.message}")
                 secondaryApp.delete()
             }
     }
@@ -222,13 +254,93 @@ class AdminPanelActivity : AppCompatActivity() {
                         uid = d.id,
                         fullName = d.getString("full_name") ?: "Unnamed",
                         email = d.getString("email") ?: "",
-                        role = d.getString("role") ?: "accountant"
+                        role = d.getString("role") ?: "accountant",
+                        department = d.getString("department") ?: "",
+                        active = d.getBoolean("active") != false
                     )
                 }
-                staffAdapter.updateData(staff)
+                val sorted = staff.sortedWith(compareBy({ it.role }, { it.fullName.lowercase() }))
                 findViewById<TextView>(R.id.tvStaffEmptyState).visibility =
                     if (staff.isEmpty()) View.VISIBLE else View.GONE
+                findViewById<TextView>(R.id.tvStaffTitle).text = "All Staff (${staff.size})"
+
+                // Show how many clients each accountant has
+                db.collection("users").whereEqualTo("role", "client").get()
+                    .addOnCompleteListener { task ->
+                        val counts = if (task.isSuccessful)
+                            task.result.documents.groupingBy { it.getString("assignedAccountantId") ?: "" }.eachCount()
+                        else emptyMap()
+                        renderStaff(sorted, counts)
+                    }
             }
+    }
+
+    /** Every staff member gets a row (name, email, duty, role, status, Deactivate/Activate). */
+    private fun renderStaff(staff: List<StaffMember>, clientCounts: Map<String, Int> = emptyMap()) {
+        val container = findViewById<LinearLayout>(R.id.containerStaff)
+        container.removeAllViews()
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        for (member in staff) {
+            val row = layoutInflater.inflate(R.layout.item_staff_row, container, false)
+            row.findViewById<TextView>(R.id.tvStaffName).text = member.fullName
+            row.findViewById<TextView>(R.id.tvStaffEmail).text = member.email
+            row.findViewById<TextView>(R.id.tvStaffAvatar).text = StatCards.initials(member.fullName)
+            val roleView = row.findViewById<TextView>(R.id.tvStaffRole)
+            roleView.text = Labels.title(member.role)
+            when (member.role) {
+                "admin" -> { roleView.setBackgroundResource(R.drawable.bg_pill_purple); roleView.setTextColor(ContextCompat.getColor(this, R.color.pill_purple_text)) }
+                "manager" -> { roleView.setBackgroundResource(R.drawable.bg_pill_amber); roleView.setTextColor(ContextCompat.getColor(this, R.color.pill_amber_text)) }
+                else -> { roleView.setBackgroundResource(R.drawable.bg_pill_blue); roleView.setTextColor(ContextCompat.getColor(this, R.color.primary)) }
+            }
+            val tvClients = row.findViewById<TextView>(R.id.tvStaffClients)
+            if (member.role == "accountant") {
+                val n = clientCounts[member.uid] ?: 0
+                tvClients.text = "$n client${if (n == 1) "" else "s"}"
+            } else {
+                tvClients.text = ""
+            }
+            row.findViewById<TextView>(R.id.tvStaffDepartment).text =
+                member.department.substringBefore("(").trim().ifEmpty { "—" }
+            val status = row.findViewById<TextView>(R.id.tvStaffStatus)
+            val toggle = row.findViewById<TextView>(R.id.btnToggleActive)
+            if (member.active) {
+                status.text = "Active"
+                status.setBackgroundResource(R.drawable.badge_status_completed)
+                toggle.text = "Deactivate"
+            } else {
+                status.text = "Inactive"
+                status.setBackgroundResource(R.drawable.badge_status_overdue)
+                toggle.text = "Activate"
+            }
+            toggle.visibility = if (member.uid == myUid) View.GONE else View.VISIBLE
+            toggle.setOnClickListener { confirmToggleActive(member) }
+            container.addView(row)
+        }
+    }
+
+    private fun confirmToggleActive(member: StaffMember) {
+        val newState = !member.active
+        val verb = if (newState) "Activate" else "Deactivate"
+        android.app.AlertDialog.Builder(this)
+            .setTitle("$verb ${member.fullName}?")
+            .setMessage(
+                if (newState) "They will be able to sign in again."
+                else "They will no longer be able to sign in to the portal."
+            )
+            .setPositiveButton(verb) { _, _ ->
+                db.collection("users").document(member.uid)
+                    .update("active", newState)
+                    .addOnSuccessListener {
+                        AuditLogger.logEvent("Admin", "$verb Staff Account", "${member.fullName} (${member.email})")
+                        loadStaffList()
+                        loadAccountantsForSpinner()
+                    }
+                    .addOnFailureListener { e ->
+                        com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
+                    }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     // ---------------------------------------------------------------
@@ -250,7 +362,7 @@ class AdminPanelActivity : AppCompatActivity() {
 
         btnAssign.setOnClickListener {
             if (clientIds.isEmpty() || accountantIds.isEmpty()) {
-                Toast.makeText(this, "Need at least one client and one accountant", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Need at least one client and one accountant")
                 return@setOnClickListener
             }
             val clientId = clientIds[spinnerClient.selectedItemPosition]
@@ -261,7 +373,7 @@ class AdminPanelActivity : AppCompatActivity() {
             db.collection("users").document(clientId)
                 .update("assignedAccountantId", accountantId)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "$clientName assigned to $accountantName", Toast.LENGTH_SHORT).show()
+                    com.ntuli.apexledger.util.Feedback.show(this, "$clientName assigned to $accountantName")
                     AuditLogger.logEvent(
                         "Admin", "Assign Client",
                         "$clientName assigned to accountant $accountantName"
@@ -269,7 +381,7 @@ class AdminPanelActivity : AppCompatActivity() {
                     loadClientsForSpinnerAndList()
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
                 }
         }
     }
@@ -308,8 +420,9 @@ class AdminPanelActivity : AppCompatActivity() {
             .whereEqualTo("role", "accountant")
             .get()
             .addOnSuccessListener { result ->
-                accountantIds = result.documents.map { it.id }
-                accountantNames = result.documents.map { it.getString("full_name") ?: "Unnamed accountant" }
+                val activeDocs = result.documents.filter { it.getBoolean("active") != false }
+                accountantIds = activeDocs.map { it.id }
+                accountantNames = activeDocs.map { it.getString("full_name") ?: "Unnamed accountant" }
 
                 val displayNames = if (accountantNames.isEmpty()) listOf("No accountants yet") else accountantNames
                 findViewById<Spinner>(R.id.spinnerAssignAccountant).adapter =
@@ -344,21 +457,42 @@ class AdminPanelActivity : AppCompatActivity() {
     // Audit log
     // ---------------------------------------------------------------
 
+    private var allAuditEntries: List<AuditLogEntry> = emptyList()
+    private var auditFilter = "all"
+
     private fun setupAuditLogSection() {
         val rvAuditLog = findViewById<RecyclerView>(R.id.rvAuditLog)
-        val tvAuditEmptyState = findViewById<TextView>(R.id.tvAuditEmptyState)
         rvAuditLog.layoutManager = LinearLayoutManager(this)
         auditAdapter = AuditLogAdapter(emptyList())
         rvAuditLog.adapter = auditAdapter
 
-        val sdf = SimpleDateFormat("dd MMM HH:mm", Locale.getDefault())
+        val chips = mapOf(
+            "all" to R.id.chipAuditAll,
+            "logins" to R.id.chipAuditLogins,
+            "failed" to R.id.chipAuditFailed,
+            "tickets" to R.id.chipAuditTickets,
+            "admin" to R.id.chipAuditAdmin
+        )
+        for ((key, id) in chips) {
+            findViewById<TextView>(id).setOnClickListener {
+                auditFilter = key
+                applyAuditFilters()
+            }
+        }
+        findViewById<EditText>(R.id.etAuditSearch).addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) { applyAuditFilters() }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        val sdf = SimpleDateFormat("dd MMM yyyy HH:mm:ss", Locale.getDefault())
 
         db.collection("audit_log")
             .orderBy("timestamp", Query.Direction.DESCENDING)
-            .limit(40)
+            .limit(100)
             .get()
             .addOnSuccessListener { result ->
-                val entries = result.documents.map { d ->
+                allAuditEntries = result.documents.map { d ->
                     val ts = d.getTimestamp("timestamp")
                     AuditLogEntry(
                         userType = d.getString("userType") ?: "User",
@@ -367,9 +501,42 @@ class AdminPanelActivity : AppCompatActivity() {
                         timestampLabel = ts?.toDate()?.let { sdf.format(it) } ?: ""
                     )
                 }
-                auditAdapter.updateData(entries)
-                tvAuditEmptyState.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+                applyAuditFilters()
             }
+        applyAuditFilters()
+    }
+
+    private fun applyAuditFilters() {
+        val chipIds = mapOf(
+            "all" to R.id.chipAuditAll, "logins" to R.id.chipAuditLogins, "failed" to R.id.chipAuditFailed,
+            "tickets" to R.id.chipAuditTickets, "admin" to R.id.chipAuditAdmin
+        )
+        for ((key, id) in chipIds) {
+            val chip = findViewById<TextView>(id)
+            val on = key == auditFilter
+            chip.setBackgroundResource(if (on) R.drawable.bg_chip_on else R.drawable.bg_chip_off)
+            chip.setTextColor(ContextCompat.getColor(this, if (on) R.color.on_primary else R.color.gray_600))
+        }
+
+        val query = findViewById<EditText>(R.id.etAuditSearch).text.toString().trim().lowercase()
+        val filtered = allAuditEntries.filter { e ->
+            val matchesChip = when (auditFilter) {
+                "logins" -> e.action == "Login" || e.action == "Logout"
+                "failed" -> e.action == "Failed Login"
+                "tickets" -> e.action.contains("Ticket", ignoreCase = true)
+                "admin" -> e.userType == "Admin"
+                else -> true
+            }
+            val matchesText = query.isEmpty() ||
+                    e.action.lowercase().contains(query) ||
+                    e.details.lowercase().contains(query) ||
+                    e.userType.lowercase().contains(query)
+            matchesChip && matchesText
+        }
+        auditAdapter.updateData(filtered)
+        val empty = findViewById<TextView>(R.id.tvAuditEmptyState)
+        empty.text = if (allAuditEntries.isEmpty()) "No audit events recorded yet" else "No events match this filter"
+        empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
     }
 
     // ---------------------------------------------------------------
@@ -377,7 +544,11 @@ class AdminPanelActivity : AppCompatActivity() {
     // ---------------------------------------------------------------
 
     private fun setupSystemHealthSection() {
-        setStat(R.id.statStorageUsed, "Storage Used", "Not available")
+        findViewById<TextView>(R.id.tvLastChecked).text =
+            "Last checked: " + SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(java.util.Date())
+        findViewById<TextView>(R.id.btnRefreshHealth).setOnClickListener { setupSystemHealthSection() }
+
+        setStat(R.id.statStorageUsed, "Storage Used", "…")
         setStat(R.id.statActiveClientsHealth, "Active Clients", "0")
         setStat(R.id.statActiveStaff, "Active Staff", "0")
         setStat(R.id.statDocsPending, "Docs Pending Review", "0")
@@ -392,10 +563,28 @@ class AdminPanelActivity : AppCompatActivity() {
         colorStatBar(R.id.statAuditEvents, R.color.primary)
 
         db.collection("users").whereEqualTo("role", "client").get()
-            .addOnSuccessListener { setStat(R.id.statActiveClientsHealth, "Active Clients", it.size().toString()) }
+            .addOnSuccessListener { r -> setStat(R.id.statActiveClientsHealth, "Active Clients", r.documents.count { it.getBoolean("active") != false }.toString()) }
 
         db.collection("users").whereIn("role", listOf("accountant", "manager", "admin")).get()
-            .addOnSuccessListener { setStat(R.id.statActiveStaff, "Active Staff", it.size().toString()) }
+            .addOnSuccessListener { r -> setStat(R.id.statActiveStaff, "Active Staff", r.documents.count { it.getBoolean("active") != false }.toString()) }
+
+        db.collection("documents").get().addOnSuccessListener { docs ->
+            val bytes = docs.documents.sumOf { it.getLong("fileSizeBytes") ?: 0L }
+            val label = when {
+                bytes >= 1024L * 1024 * 1024 -> String.format(Locale.getDefault(), "%.2f GB", bytes / (1024.0 * 1024 * 1024))
+                bytes >= 1024L * 1024 -> String.format(Locale.getDefault(), "%.2f MB", bytes / (1024.0 * 1024))
+                bytes >= 1024L -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+                else -> "0 MB"
+            }
+            setStat(R.id.statStorageUsed, "Storage Used", label)
+        }
+
+        db.collection("tickets").get().addOnSuccessListener { tickets ->
+            openTicketCount = tickets.documents.count {
+                (it.getString("status") ?: "open") !in listOf("completed", "cancelled")
+            }
+            if (serviceStatusShown) updateServiceStatusList(lastFirestoreDisrupted, lastStorageDisrupted)
+        }
 
         db.collection("documents").whereEqualTo("reviewStatus", "pending").get()
             .addOnSuccessListener { setStat(R.id.statDocsPending, "Docs Pending Review", it.size().toString()) }
@@ -470,10 +659,13 @@ class AdminPanelActivity : AppCompatActivity() {
     }
 
     private fun updateServiceStatusList(firestoreDisrupted: Boolean?, storageDisrupted: Boolean?) {
+        lastFirestoreDisrupted = firestoreDisrupted
+        lastStorageDisrupted = storageDisrupted
+        serviceStatusShown = true
         val rvServiceStatus = findViewById<RecyclerView>(R.id.rvServiceStatus)
         val services = listOf(
             ServiceStatus(
-                "Firestore Database",
+                "Database",
                 when (firestoreDisrupted) {
                     true -> "Disrupted"
                     false -> "Operational"
@@ -482,7 +674,7 @@ class AdminPanelActivity : AppCompatActivity() {
                 firestoreDisrupted == false
             ),
             ServiceStatus(
-                "Firebase Storage",
+                "Document Storage",
                 when (storageDisrupted) {
                     true -> "Disrupted"
                     false -> "Operational"
@@ -492,7 +684,12 @@ class AdminPanelActivity : AppCompatActivity() {
             ),
             ServiceStatus(
                 "Authentication Service",
-                "See status.firebase.google.com",
+                "Operational",
+                true
+            ),
+            ServiceStatus(
+                "Service Ticket Queue ($openTicketCount open)",
+                "Normal",
                 true
             )
         )

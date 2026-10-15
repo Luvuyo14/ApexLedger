@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        com.ntuli.apexledger.util.PasswordToggle.attach(findViewById<EditText>(R.id.etPassword))
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         val etEmail = findViewById<EditText>(R.id.etEmail)
         val etPassword = findViewById<EditText>(R.id.etPassword)
         val btnLogin = findViewById<Button>(R.id.btnLogin)
-        val btnRegister = findViewById<Button>(R.id.btnRegister)
+        val btnRegister = findViewById<TextView>(R.id.btnRegister)
         val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
         val tvErrorEmail = findViewById<TextView>(R.id.tvErrorEmail)
         val tvErrorPassword = findViewById<TextView>(R.id.tvErrorPassword)
@@ -61,6 +62,15 @@ class MainActivity : AppCompatActivity() {
             }
             if (hasError) return@setOnClickListener
 
+            val lockedMinutes = minutesLocked(email)
+            if (lockedMinutes > 0) {
+                showLoginError(
+                    etEmail, etPassword, tvStatus,
+                    "Too many failed attempts. This account is locked for another $lockedMinutes minute(s)."
+                )
+                return@setOnClickListener
+            }
+
             btnLogin.isEnabled = false
             progressLogin.visibility = View.VISIBLE
 
@@ -78,6 +88,12 @@ class MainActivity : AppCompatActivity() {
                             if (!doc.exists()) {
                                 auth.signOut()
                                 showLoginError(etEmail, etPassword, tvStatus, "Your account setup is incomplete. Please contact support.")
+                                return@addOnSuccessListener
+                            }
+
+                            if (doc.getBoolean("active") == false) {
+                                auth.signOut()
+                                showLoginError(etEmail, etPassword, tvStatus, "This account has been deactivated. Please contact an administrator.")
                                 return@addOnSuccessListener
                             }
 
@@ -100,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                                 return@addOnSuccessListener
                             }
 
+                            clearFailedAttempts(email)
                             AuditLogger.logEvent(if (role == "client") "Client" else "User", "Login")
 
                             startActivity(Intent(this, destination))
@@ -111,6 +128,7 @@ class MainActivity : AppCompatActivity() {
                         }
                 }
                 .addOnFailureListener { e ->
+                    registerFailedAttempt(email)
                     AuditLogger.logEvent("Client", "Failed Login", e.message ?: "")
                     showLoginError(etEmail, etPassword, tvStatus, "Login failed: ${e.message}")
                 }
@@ -123,6 +141,33 @@ class MainActivity : AppCompatActivity() {
         tvForgotPassword.setOnClickListener {
             showForgotPasswordDialog()
         }
+    }
+
+    // --- Local lock-out: 5 failed attempts lock the account on this device for 15 minutes ---
+    private val prefs get() = getSharedPreferences("login_guard", MODE_PRIVATE)
+    private fun key(email: String) = email.lowercase()
+
+    private fun minutesLocked(email: String): Long {
+        val until = prefs.getLong("lock_${key(email)}", 0L)
+        val remaining = until - System.currentTimeMillis()
+        return if (remaining > 0) (remaining / 60000L) + 1 else 0
+    }
+
+    private fun registerFailedAttempt(email: String) {
+        val k = key(email)
+        val fails = prefs.getInt("fails_$k", 0) + 1
+        val editor = prefs.edit()
+        if (fails >= 5) {
+            editor.putLong("lock_$k", System.currentTimeMillis() + 15 * 60 * 1000L)
+            editor.putInt("fails_$k", 0)
+        } else {
+            editor.putInt("fails_$k", fails)
+        }
+        editor.apply()
+    }
+
+    private fun clearFailedAttempts(email: String) {
+        prefs.edit().remove("fails_${key(email)}").remove("lock_${key(email)}").apply()
     }
 
     private fun showLoginError(etEmail: EditText, etPassword: EditText, tvStatus: TextView, message: String) {
@@ -152,29 +197,25 @@ class MainActivity : AppCompatActivity() {
                 val email = etResetEmail.text.toString().trim()
 
                 if (email.isEmpty()) {
-                    Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show()
+                    com.ntuli.apexledger.util.Feedback.show(this, "Please enter your email")
                     return@setPositiveButton
                 }
                 if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                    com.ntuli.apexledger.util.Feedback.show(this, "Please enter a valid email address")
                     return@setPositiveButton
                 }
 
                 // No Firestore lookup here: nobody is signed in on this screen,
-                // so the rules (correctly) deny reading the users collection.
+                // so the rules (correctly) deny reading the 1users collection.
                 // Firebase only emails addresses that exist in Authentication,
                 // and deliberately reports success either way so the screen
                 // can't be used to discover which emails have accounts.
                 auth.sendPasswordResetEmail(email)
                     .addOnSuccessListener {
-                        Toast.makeText(
-                            this,
-                            "If an account exists for $email, a reset link has been sent. Check your inbox and spam folder.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        com.ntuli.apexledger.util.Feedback.show(this, "If an account exists for $email, a reset link has been sent. Check your inbox and spam folder.")
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Could not send reset email: ${e.message}", Toast.LENGTH_LONG).show()
+                        com.ntuli.apexledger.util.Feedback.show(this, "Could not send reset email: ${e.message}")
                     }
             }
             .setNegativeButton("Cancel", null)

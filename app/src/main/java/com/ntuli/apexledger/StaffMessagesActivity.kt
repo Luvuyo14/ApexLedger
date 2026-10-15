@@ -30,6 +30,7 @@ class StaffMessagesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_staff_messages)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -58,11 +59,11 @@ class StaffMessagesActivity : AppCompatActivity() {
             val firstMessage = etNewMessageBody.text.toString().trim()
 
             if (subject.isEmpty()) {
-                Toast.makeText(this, "Please enter a subject", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Please enter a subject")
                 return@setOnClickListener
             }
             if (assignedClientIds.isEmpty()) {
-                Toast.makeText(this, "You have no assigned clients yet", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "You have no assigned clients yet")
                 return@setOnClickListener
             }
 
@@ -134,8 +135,9 @@ class StaffMessagesActivity : AppCompatActivity() {
                             fetched.addAll(threads)
                             completedBatches++
                             if (completedBatches == batches.size) {
-                                adapter.updateData(fetched)
                                 tvEmptyState.visibility = if (fetched.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                                adapter.updateData(fetched)
+                                com.ntuli.apexledger.util.Unread.mark(db, uid, fetched.toList()) { adapter.updateData(it) }
                             }
                         }
                 }

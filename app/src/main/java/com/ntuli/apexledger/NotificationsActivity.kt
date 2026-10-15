@@ -24,6 +24,7 @@ class NotificationsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notifications)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()

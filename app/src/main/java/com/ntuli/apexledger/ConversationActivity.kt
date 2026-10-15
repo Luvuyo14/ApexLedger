@@ -26,6 +26,8 @@ class ConversationActivity : AppCompatActivity() {
     // Kept so we can stop listening when the screen closes.
     private var messagesListener: ListenerRegistration? = null
 
+    private val timeFormat = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault())
+
     private val urgentKeywords = listOf("urgent", "deadline", "penalty", "asap", "overdue")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,6 +43,7 @@ class ConversationActivity : AppCompatActivity() {
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         toolbar.title = subject
         toolbar.setNavigationOnClickListener { finish() }
+        resolveCounterpartName(subject, toolbar)
 
         val rv = findViewById<RecyclerView>(R.id.rvMessages)
         val etBody = findViewById<EditText>(R.id.etMessageBody)
@@ -58,6 +61,28 @@ class ConversationActivity : AppCompatActivity() {
             if (text.isNotEmpty()) {
                 sendMessage(text)
                 etBody.text.clear()
+            }
+        }
+    }
+
+    /** Title becomes "<subject> with <other person>". */
+    private fun resolveCounterpartName(subject: String, toolbar: MaterialToolbar) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("threads").document(threadId).get().addOnSuccessListener { thread ->
+            val clientId = thread.getString("clientId") ?: return@addOnSuccessListener
+            if (uid == clientId) {
+                db.collection("users").document(clientId).get().addOnSuccessListener { client ->
+                    val accId = client.getString("assignedAccountantId")
+                    if (!accId.isNullOrEmpty()) {
+                        db.collection("users").document(accId).get().addOnSuccessListener { acc ->
+                            acc.getString("full_name")?.let { toolbar.title = "$subject with $it" }
+                        }
+                    }
+                }
+            } else {
+                db.collection("users").document(clientId).get().addOnSuccessListener { client ->
+                    client.getString("full_name")?.let { toolbar.title = "$subject with $it" }
+                }
             }
         }
     }
@@ -81,7 +106,9 @@ class ConversationActivity : AppCompatActivity() {
                             senderId = d.getString("senderId") ?: "",
                             messageBody = d.getString("messageBody") ?: "",
                             isUrgent = d.getBoolean("isUrgent") ?: false,
-                            readBy = (d.get("readBy") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                            readBy = (d.get("readBy") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                            timeLabel = d.getTimestamp("sentTimestamp")?.toDate()
+                                ?.let { timeFormat.format(it) } ?: ""
                         )
                     }
                     adapter.updateData(messages)

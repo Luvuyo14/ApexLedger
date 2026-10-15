@@ -16,6 +16,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.StaffTicketAdapter
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.Labels
 import java.util.Calendar
 import com.ntuli.apexledger.util.NotificationHelper
 
@@ -25,9 +26,9 @@ class StaffTicketsActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var adapter: StaffTicketAdapter
 
-    private val statusOptions = listOf("open", "in_progress", "awaiting_documents", "completed", "cancelled")
+    private val statusOptions = listOf("open", "in_progress", "awaiting_documents", "under_review", "completed", "cancelled")
     private val statusFilterOptions = listOf("All statuses") + statusOptions
-    private val priorityOptions = listOf("All priorities", "low", "medium", "high")
+    private val priorityOptions = listOf("All priorities", "low", "medium", "high", "urgent")
 
     private var allTickets: List<Ticket> = emptyList()
     private var selectedStatusFilter = "All statuses"
@@ -36,6 +37,7 @@ class StaffTicketsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_staff_tickets)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -52,14 +54,15 @@ class StaffTicketsActivity : AppCompatActivity() {
             emptyList(),
             statusOptions,
             onStatusChanged = { ticket, newStatus -> updateTicketStatus(ticket, newStatus) },
-            onSetDueDate = { ticket -> showDatePicker(ticket) }
+            onSetDueDate = { ticket -> showDatePicker(ticket) },
+            onEditNotes = { ticket -> showNotesDialog(ticket) }
         )
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
         spinnerFilterStatus.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            statusFilterOptions.map { if (it == "All statuses") it else it.replace("_", " ").replaceFirstChar { c -> c.uppercase() } }
+            statusFilterOptions.map { if (it == "All statuses") it else Labels.status(it) }
         )
         spinnerFilterStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
@@ -71,7 +74,7 @@ class StaffTicketsActivity : AppCompatActivity() {
 
         spinnerFilterPriority.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            priorityOptions.map { if (it == "All priorities") it else it.replaceFirstChar { c -> c.uppercase() } }
+            priorityOptions.map { if (it == "All priorities") it else Labels.priority(it) }
         )
         spinnerFilterPriority.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
@@ -115,24 +118,36 @@ class StaffTicketsActivity : AppCompatActivity() {
                         .whereIn("clientId", batch)
                         .get()
                         .addOnSuccessListener { result ->
-                            val tickets = result.documents.map { d ->
-                                Ticket(
-                                    ticketId = d.id,
-                                    ticketNumber = d.getString("ticketNumber") ?: d.id,
-                                    serviceType = d.getString("serviceType") ?: "general",
-                                    status = d.getString("status") ?: "open",
-                                    priority = d.getString("priority") ?: "medium",
-                                    description = d.getString("description") ?: "",
-                                    dueDate = d.getString("dueDate") ?: "",
-                                    clientName = clientNames[d.getString("clientId")] ?: "Unknown client"
-                                )
-                            }
-                            fetched.addAll(tickets)
-                            completedBatches++
-                            if (completedBatches == batches.size) {
-                                allTickets = fetched
-                                applyFilters(tvEmptyState)
-                            }
+                            // Internal notes live in a staff-only collection so clients can never read them
+                            db.collection("ticket_notes")
+                                .whereIn("clientId", batch)
+                                .get()
+                                .addOnCompleteListener { notesTask ->
+                                    val notes = if (notesTask.isSuccessful)
+                                        notesTask.result.documents.associate { it.id to (it.getString("notes") ?: "") }
+                                    else emptyMap()
+
+                                    val tickets = result.documents.map { d ->
+                                        Ticket(
+                                            ticketId = d.id,
+                                            ticketNumber = d.getString("ticketNumber") ?: d.id,
+                                            serviceType = d.getString("serviceType") ?: "general",
+                                            status = d.getString("status") ?: "open",
+                                            priority = d.getString("priority") ?: "medium",
+                                            description = d.getString("description") ?: "",
+                                            dueDate = d.getString("dueDate") ?: "",
+                                            internalNotes = notes[d.id] ?: "",
+                                            clientId = d.getString("clientId") ?: "",
+                                            clientName = clientNames[d.getString("clientId")] ?: "Unknown client"
+                                        )
+                                    }
+                                    fetched.addAll(tickets)
+                                    completedBatches++
+                                    if (completedBatches == batches.size) {
+                                        allTickets = fetched
+                                        applyFilters(tvEmptyState)
+                                    }
+                                }
                         }
                 }
             }
@@ -154,7 +169,7 @@ class StaffTicketsActivity : AppCompatActivity() {
         db.collection("tickets").document(ticket.ticketId)
             .update("status", newStatus)
             .addOnSuccessListener {
-                Toast.makeText(this, "Ticket ${ticket.ticketNumber} updated to ${newStatus.replace("_", " ")}", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Ticket ${ticket.ticketNumber} updated to ${Labels.status(newStatus)}")
                 AuditLogger.logEvent(
                     "User", "Update Ticket Status",
                     "${ticket.ticketNumber} → $newStatus (client: ${ticket.clientName})"
@@ -168,7 +183,7 @@ class StaffTicketsActivity : AppCompatActivity() {
                                 recipientUid = clientId,
                                 type = "ticket_update",
                                 title = "Ticket ${ticket.ticketNumber} updated",
-                                body = "Your ticket status changed to ${newStatus.replace("_", " ")}."
+                                body = "Your ticket status changed to ${Labels.status(newStatus)}."
                             )
                         }
                     }
@@ -176,7 +191,7 @@ class StaffTicketsActivity : AppCompatActivity() {
                 loadAssignedTickets(findViewById(R.id.tvEmptyState))
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to update: ${e.message}", Toast.LENGTH_LONG).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Failed to update: ${e.message}")
             }
     }
 
@@ -198,7 +213,7 @@ class StaffTicketsActivity : AppCompatActivity() {
         db.collection("tickets").document(ticket.ticketId)
             .update("dueDate", dueDate)
             .addOnSuccessListener {
-                Toast.makeText(this, "Due date set to $dueDate", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Due date set to $dueDate")
                 AuditLogger.logEvent(
                     "User", "Set Ticket Due Date",
                     "${ticket.ticketNumber} → $dueDate (client: ${ticket.clientName})"
@@ -206,7 +221,35 @@ class StaffTicketsActivity : AppCompatActivity() {
                 loadAssignedTickets(findViewById(R.id.tvEmptyState))
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to update: ${e.message}", Toast.LENGTH_LONG).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Failed to update: ${e.message}")
             }
+    }
+
+    private fun showNotesDialog(ticket: Ticket) {
+        val input = android.widget.EditText(this)
+        input.setText(ticket.internalNotes)
+        input.hint = "Notes visible to staff only"
+        input.minLines = 3
+        input.gravity = android.view.Gravity.TOP
+        input.setPadding(48, 32, 48, 16)
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Internal notes — ${ticket.ticketNumber}")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val notes = input.text.toString().trim()
+                db.collection("ticket_notes").document(ticket.ticketId)
+                    .set(mapOf("clientId" to ticket.clientId, "notes" to notes))
+                    .addOnSuccessListener {
+                        com.ntuli.apexledger.util.Feedback.show(this, "Notes saved")
+                        AuditLogger.logEvent("User", "Update Ticket Notes", ticket.ticketNumber)
+                        loadAssignedTickets(findViewById(R.id.tvEmptyState))
+                    }
+                    .addOnFailureListener { e ->
+                        com.ntuli.apexledger.util.Feedback.show(this, "Failed to save: ${e.message}")
+                    }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }

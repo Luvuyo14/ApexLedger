@@ -13,6 +13,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.ntuli.apexledger.util.Labels
 
 class ProfileActivity : AppCompatActivity() {
 
@@ -36,6 +37,23 @@ class ProfileActivity : AppCompatActivity() {
         val switchSms = findViewById<SwitchMaterial>(R.id.switchSms)
         val switchPush = findViewById<SwitchMaterial>(R.id.switchPush)
         val btnSave = findViewById<MaterialButton>(R.id.btnSaveProfile)
+        val switchDark = findViewById<SwitchMaterial>(R.id.switchDarkMode)
+        switchDark.isChecked = com.ntuli.apexledger.util.ThemeMode.isDark(this)
+        switchDark.setOnCheckedChangeListener { _, on ->
+            if (on != com.ntuli.apexledger.util.ThemeMode.isDark(this)) {
+                com.ntuli.apexledger.util.ThemeMode.setDark(this, on)
+            }
+        }
+        val btnSavePersonal = findViewById<MaterialButton>(R.id.btnSavePersonal)
+        val etPhone = findViewById<EditText>(R.id.etPhone)
+        val etAddress = findViewById<EditText>(R.id.etAddress)
+        val tvTaxNumber = findViewById<TextView>(R.id.tvTaxNumber)
+        val tvServicePref = findViewById<TextView>(R.id.tvServicePref)
+        val tvRoleReadonly = findViewById<TextView>(R.id.tvRoleReadonly)
+        val tvDepartmentReadonly = findViewById<TextView>(R.id.tvDepartmentReadonly)
+        val groupClient = findViewById<android.view.View>(R.id.groupClientFields)
+        val groupStaff = findViewById<android.view.View>(R.id.groupStaffFields)
+        var isClient = true
         val btnChangePassword = findViewById<MaterialButton>(R.id.btnChangePassword)
 
         tvEmail.text = auth.currentUser?.email ?: ""
@@ -50,24 +68,61 @@ class ProfileActivity : AppCompatActivity() {
                     switchEmail.isChecked = doc.getBoolean("notify_email") ?: true
                     switchSms.isChecked = doc.getBoolean("notify_sms") ?: false
                     switchPush.isChecked = doc.getBoolean("notify_push") ?: true
+
+                    val role = doc.getString("role") ?: "client"
+                    findViewById<TextView>(R.id.tvBannerTitle).text = doc.getString("full_name") ?: "My Profile"
+                    findViewById<TextView>(R.id.tvBannerSubtitle).text =
+                        listOf(doc.getString("email") ?: "", Labels.title(role)).filter { it.isNotEmpty() }.joinToString("  •  ")
+                    isClient = role == "client"
+                    if (isClient) {
+                        groupClient.visibility = android.view.View.VISIBLE
+                        etPhone.setText(doc.getString("phone") ?: "")
+                        etAddress.setText(doc.getString("address") ?: "")
+                        tvTaxNumber.text = doc.getString("taxNumber") ?: "—"
+                        tvServicePref.text = Labels.service(doc.getString("servicePreference") ?: "")
+                    } else {
+                        groupStaff.visibility = android.view.View.VISIBLE
+                        tvRoleReadonly.text = Labels.title(role)
+                        tvDepartmentReadonly.text = (doc.getString("department") ?: "").ifEmpty { "—" }
+                    }
+                }
+        }
+
+        btnSavePersonal.setOnClickListener {
+            if (uid == null) return@setOnClickListener
+            val name = etFullName.text.toString().trim()
+            if (name.isEmpty()) {
+                com.ntuli.apexledger.util.Feedback.show(this, "Full name is required")
+                return@setOnClickListener
+            }
+            val personal = hashMapOf<String, Any>("full_name" to name)
+            if (isClient) {
+                personal["phone"] = etPhone.text.toString().trim()
+                personal["address"] = etAddress.text.toString().trim()
+            }
+            db.collection("users").document(uid).update(personal)
+                .addOnSuccessListener {
+                    com.ntuli.apexledger.util.Feedback.show(this, "Profile updated")
+                    tvAvatarInitials.text = initialsFrom(name)
+                }
+                .addOnFailureListener { e ->
+                    com.ntuli.apexledger.util.Feedback.show(this, "Update failed: ${e.message}")
                 }
         }
 
         btnSave.setOnClickListener {
             if (uid == null) return@setOnClickListener
             val updates = mapOf(
-                "full_name" to etFullName.text.toString().trim(),
                 "notify_email" to switchEmail.isChecked,
                 "notify_sms" to switchSms.isChecked,
                 "notify_push" to switchPush.isChecked
             )
             db.collection("users").document(uid).update(updates)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show()
-                    tvAvatarInitials.text = initialsFrom(etFullName.text.toString())
+                    com.ntuli.apexledger.util.Feedback.show(this, "Preferences saved")
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Update failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    com.ntuli.apexledger.util.Feedback.show(this, "Update failed: ${e.message}")
                 }
         }
 
@@ -89,6 +144,8 @@ class ProfileActivity : AppCompatActivity() {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_change_password, null)
         val etCurrentPassword = view.findViewById<EditText>(R.id.etCurrentPassword)
         val etNewPassword = view.findViewById<EditText>(R.id.etNewPassword)
+        com.ntuli.apexledger.util.PasswordToggle.attach(etCurrentPassword)
+        com.ntuli.apexledger.util.PasswordToggle.attach(etNewPassword)
         val tvErrorCurrentPassword = view.findViewById<TextView>(R.id.tvErrorCurrentPassword)
         val tvErrorNewPassword = view.findViewById<TextView>(R.id.tvErrorNewPassword)
 
@@ -133,11 +190,11 @@ class ProfileActivity : AppCompatActivity() {
                         .addOnSuccessListener {
                             user.updatePassword(newPassword)
                                 .addOnSuccessListener {
-                                    Toast.makeText(this, "Password updated", Toast.LENGTH_SHORT).show()
+                                    com.ntuli.apexledger.util.Feedback.show(this, "Password updated")
                                     dialog.dismiss()
                                 }
                                 .addOnFailureListener { e ->
-                                    Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                    com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
                                 }
                         }
                         .addOnFailureListener {

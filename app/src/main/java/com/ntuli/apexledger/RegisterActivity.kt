@@ -8,6 +8,7 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.ntuli.apexledger.util.Labels
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -26,6 +27,9 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var etFullName: EditText
     private lateinit var etEmail: EditText
     private lateinit var etPhone: EditText
+    private lateinit var etTaxNumber: EditText
+    private lateinit var tvErrorTaxNumber: TextView
+    private lateinit var tvErrorService: TextView
     private lateinit var etAddress: EditText
     private lateinit var etPassword: EditText
     private lateinit var etConfirmPassword: EditText
@@ -40,6 +44,8 @@ class RegisterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
+        com.ntuli.apexledger.util.PasswordToggle.attach(findViewById<EditText>(R.id.etPassword))
+        com.ntuli.apexledger.util.PasswordToggle.attach(findViewById<EditText>(R.id.etConfirmPassword))
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -47,6 +53,10 @@ class RegisterActivity : AppCompatActivity() {
         etFullName = findViewById(R.id.etFullName)
         etEmail = findViewById(R.id.etEmail)
         etPhone = findViewById(R.id.etPhone)
+        etTaxNumber = findViewById(R.id.etTaxNumber)
+        tvErrorTaxNumber = findViewById(R.id.tvErrorTaxNumber)
+        tvErrorService = findViewById(R.id.tvErrorService)
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelRegister).setOnClickListener { finish() }
         val spinnerServicePreference = findViewById<Spinner>(R.id.spinnerServicePreference)
         etAddress = findViewById(R.id.etAddress)
         etPassword = findViewById(R.id.etPassword)
@@ -63,7 +73,8 @@ class RegisterActivity : AppCompatActivity() {
         tvErrorConfirmPassword = findViewById(R.id.tvErrorConfirmPassword)
 
         spinnerServicePreference.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item, servicePreferences
+            this, android.R.layout.simple_spinner_dropdown_item,
+            listOf("Select a service...") + servicePreferences.map { Labels.service(it) }
         )
 
         tvBackToLogin.setOnClickListener { finish() }
@@ -75,7 +86,9 @@ class RegisterActivity : AppCompatActivity() {
             val fullName = etFullName.text.toString().trim()
             val email = etEmail.text.toString().trim()
             val phone = etPhone.text.toString().trim()
-            val servicePreference = servicePreferences[spinnerServicePreference.selectedItemPosition]
+            val servicePosition = spinnerServicePreference.selectedItemPosition
+            val servicePreference = if (servicePosition > 0) servicePreferences[servicePosition - 1] else ""
+            val taxNumber = etTaxNumber.text.toString().trim()
             val address = etAddress.text.toString().trim()
             val password = etPassword.text.toString()
             val confirmPassword = etConfirmPassword.text.toString()
@@ -95,6 +108,15 @@ class RegisterActivity : AppCompatActivity() {
             }
             if (phone.isEmpty()) {
                 showFieldError(etPhone, tvErrorPhone, "Phone number is required")
+                hasError = true
+            }
+            if (!Regex("^\\d{10}$").matches(taxNumber)) {
+                showFieldError(etTaxNumber, tvErrorTaxNumber, "Tax number must be exactly 10 digits")
+                hasError = true
+            }
+            if (servicePreference.isEmpty()) {
+                tvErrorService.text = "Please select a service"
+                tvErrorService.visibility = View.VISIBLE
                 hasError = true
             }
             if (address.isEmpty()) {
@@ -145,13 +167,15 @@ class RegisterActivity : AppCompatActivity() {
                         .addOnSuccessListener { accountantsResult ->
                             val matchedAccountant = accountantsResult.documents.firstOrNull { doc ->
                                 val department = doc.getString("department") ?: ""
-                                dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword)
+                                dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword) &&
+                                        doc.getBoolean("active") != false
                             }
 
                             val profile = hashMapOf(
                                 "full_name" to fullName,
                                 "email" to email,
                                 "phone" to phone,
+                                "taxNumber" to taxNumber,
                                 "servicePreference" to servicePreference,
                                 "address" to address,
                                 "role" to "client",
@@ -217,9 +241,9 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun clearAllFieldErrors() {
-        val fields = listOf(etFullName, etEmail, etPhone, etAddress, etPassword, etConfirmPassword)
+        val fields = listOf(etFullName, etEmail, etPhone, etTaxNumber, etAddress, etPassword, etConfirmPassword)
         val errorLabels = listOf(
-            tvErrorFullName, tvErrorEmail, tvErrorPhone,
+            tvErrorFullName, tvErrorEmail, tvErrorPhone, tvErrorTaxNumber, tvErrorService,
             tvErrorAddress, tvErrorPassword, tvErrorConfirmPassword
         )
 

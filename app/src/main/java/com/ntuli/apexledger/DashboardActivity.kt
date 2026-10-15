@@ -2,6 +2,7 @@ package com.ntuli.apexledger
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -18,6 +19,9 @@ import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
 import com.ntuli.apexledger.util.AuditLogger
 import com.ntuli.apexledger.util.DateUtils
+import com.ntuli.apexledger.util.StatCards
+import com.ntuli.apexledger.util.DashRows
+import com.ntuli.apexledger.util.Labels
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,6 +35,7 @@ class DashboardActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { recreate() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -43,7 +48,16 @@ class DashboardActivity : AppCompatActivity() {
         val tvRole = findViewById<TextView>(R.id.tvRole)
         val rvRecentTickets = findViewById<RecyclerView>(R.id.rvRecentTickets)
 
-        toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_menu_overflow_material)
+        toolbar.setNavigationIcon(R.drawable.ic_menu_hamburger)
+        navigationView.setCheckedItem(R.id.nav_dashboard)
+        navigationView.menu.findItem(R.id.nav_logout)?.let { item ->
+            val red = android.text.SpannableString(item.title)
+            red.setSpan(
+                android.text.style.ForegroundColorSpan(androidx.core.content.ContextCompat.getColor(this, R.color.danger)),
+                0, red.length, 0
+            )
+            item.title = red
+        }
         toolbar.setNavigationOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
         }
@@ -63,7 +77,10 @@ class DashboardActivity : AppCompatActivity() {
                     val fullName = doc.getString("full_name") ?: auth.currentUser?.email
                     val role = doc.getString("role") ?: "client"
                     tvWelcome.text = "Welcome back, $fullName!"
-                    tvRole.text = "Role: $role"
+                    tvRole.text = "Client Portal"
+                    tvRole.visibility = android.view.View.VISIBLE
+                    findViewById<TextView>(R.id.tvAvatar).text = StatCards.initials(fullName)
+                    loadAssignedAccountant(doc.getString("assignedAccountantId"))
                 }
         }
 
@@ -77,6 +94,21 @@ class DashboardActivity : AppCompatActivity() {
         colorStatBar(R.id.statMessages, R.color.warning)
         colorStatBar(R.id.statTickets, R.color.success)
         colorStatBar(R.id.statOverdue, R.color.danger)
+        StatCards.decorate(findViewById(R.id.statDocuments), R.drawable.ic_stat_document, R.color.primary)
+        StatCards.decorate(findViewById(R.id.statMessages), R.drawable.ic_stat_mail, R.color.warning)
+        StatCards.decorate(findViewById(R.id.statTickets), R.drawable.ic_stat_ticket, R.color.success)
+        StatCards.decorate(findViewById(R.id.statOverdue), R.drawable.ic_stat_warning, R.color.danger)
+
+        findViewById<View>(R.id.qaRequest).setOnClickListener {
+            startActivity(Intent(this, TicketsActivity::class.java).putExtra("openNew", true))
+        }
+        findViewById<View>(R.id.qaUpload).setOnClickListener { startActivity(Intent(this, DocumentsActivity::class.java)) }
+        findViewById<View>(R.id.qaMessage).setOnClickListener { startActivity(Intent(this, MessagesActivity::class.java)) }
+        findViewById<View>(R.id.qaTickets).setOnClickListener { startActivity(Intent(this, TicketsActivity::class.java)) }
+
+        findViewById<TextView>(R.id.btnViewAllClient).setOnClickListener {
+            startActivity(Intent(this, TicketsActivity::class.java))
+        }
 
         navigationView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
@@ -96,9 +128,85 @@ class DashboardActivity : AppCompatActivity() {
             true
         }
 
-        findViewById<TextView>(R.id.btnNotifications).setOnClickListener {
+        findViewById<android.view.View>(R.id.btnNotifications).setOnClickListener {
             startActivity(Intent(this, NotificationsActivity::class.java))
         }
+    }
+
+    /** Next three due dates, nearest first. Hidden when nothing is due. */
+    private fun renderComingUp(tickets: List<Ticket>) {
+        val card = findViewById<View>(R.id.cardComingUp)
+        val upcoming = tickets
+            .filter { it.dueDate.isNotEmpty() && it.status !in listOf("completed", "cancelled") }
+            .sortedBy { it.dueDate }
+            .take(3)
+        if (upcoming.isEmpty()) { card.visibility = View.GONE; return }
+        val container = DashRows.section(card, "Coming Up")
+        for (t in upcoming) {
+            val chip = DashRows.dueChip(t.dueDate)
+            DashRows.addRow(
+                container, t.ticketNumber, Labels.service(t.serviceType),
+                chip?.first, chip?.second ?: R.drawable.badge_status_open, chip?.third ?: R.color.navy
+            )
+        }
+        card.visibility = View.VISIBLE
+    }
+
+    /** Warns when an accountant is waiting for documents or a document was rejected. */
+    private fun renderActionNeeded(awaiting: List<Ticket>) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("documents")
+            .whereEqualTo("clientId", uid)
+            .whereEqualTo("reviewStatus", "rejected")
+            .get()
+            .addOnCompleteListener { task ->
+                val rejected = if (task.isSuccessful) task.result.size() else 0
+                val card = findViewById<View>(R.id.cardActionNeeded)
+                if (awaiting.isEmpty() && rejected == 0) { card.visibility = View.GONE; return@addOnCompleteListener }
+                val container = DashRows.section(card, "Action Needed", R.color.danger_dark)
+                val toDocs = { startActivity(Intent(this, DocumentsActivity::class.java)) }
+                for (t in awaiting) {
+                    DashRows.addRow(
+                        container, "Documents needed for ${t.ticketNumber}",
+                        "Your accountant is waiting for your ${Labels.service(t.serviceType)} documents.",
+                        "Upload", R.drawable.bg_button_primary_small, R.color.on_primary, toDocs
+                    )
+                }
+                if (rejected > 0) {
+                    DashRows.addRow(
+                        container, "$rejected document${if (rejected == 1) " was" else "s were"} rejected",
+                        "Please review the feedback and upload a corrected copy.",
+                        "Review", R.drawable.bg_button_primary_small, R.color.on_primary, toDocs
+                    )
+                }
+                card.visibility = View.VISIBLE
+            }
+    }
+
+    /** Shows the accountant assigned to this client (name, duty, email). */
+    private fun loadAssignedAccountant(accountantId: String?) {
+        val tvName = findViewById<TextView>(R.id.tvAccountantName)
+        val tvMeta = findViewById<TextView>(R.id.tvAccountantMeta)
+        val tvAvatar = findViewById<TextView>(R.id.tvAccountantAvatar)
+        if (accountantId.isNullOrEmpty()) {
+            tvName.text = "Not assigned yet"
+            tvMeta.text = "An administrator will assign your accountant shortly."
+            return
+        }
+        db.collection("users").document(accountantId).get()
+            .addOnSuccessListener { acc ->
+                val name = acc.getString("full_name") ?: "Your accountant"
+                val duty = (acc.getString("department") ?: "").substringBefore("(").trim()
+                val email = acc.getString("email") ?: ""
+                tvName.text = name
+                tvAvatar.text = StatCards.initials(name)
+                tvMeta.text = listOf(if (duty.isNotEmpty()) "$duty Duty" else "", email)
+                    .filter { it.isNotEmpty() }.joinToString(" • ")
+            }
+            .addOnFailureListener {
+                tvName.text = "Accountant assigned"
+                tvMeta.text = ""
+            }
     }
 
     private fun loadTicketsAndOverdue(uid: String) {
@@ -119,7 +227,12 @@ class DashboardActivity : AppCompatActivity() {
                 }
 
                 ticketAdapter.updateData(allTickets.take(5))
+                findViewById<TextView>(R.id.tvNoTickets).visibility =
+                    if (allTickets.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                 setStat(R.id.statTickets, "Active Tickets", allTickets.count { it.status !in listOf("completed", "cancelled") }.toString())
+
+                renderComingUp(allTickets)
+                renderActionNeeded(allTickets.filter { it.status == "awaiting_documents" })
 
                 val overdueCount = allTickets.count { DateUtils.isOverdue(it.dueDate, it.status) }
                 setStat(R.id.statOverdue, "Overdue", overdueCount.toString())

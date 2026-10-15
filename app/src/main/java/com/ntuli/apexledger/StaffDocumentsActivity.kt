@@ -30,6 +30,7 @@ class StaffDocumentsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_staff_documents)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -51,7 +52,7 @@ class StaffDocumentsActivity : AppCompatActivity() {
 
         spinnerFilterStatus.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            statusFilterOptions.map { if (it == "All statuses") it else it.replace("_", " ").replaceFirstChar { c -> c.uppercase() } }
+            statusFilterOptions.map { if (it == "All statuses") it else com.ntuli.apexledger.util.Labels.status(it) }
         )
         spinnerFilterStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
@@ -95,14 +96,16 @@ class StaffDocumentsActivity : AppCompatActivity() {
                         .whereIn("clientId", batch)
                         .get()
                         .addOnSuccessListener { result ->
-                            val docs = result.documents.map { d ->
+                            val docs = result.documents.filter { it.getBoolean("uploadComplete") != false }.map { d ->
                                 Document(
                                     documentId = d.id,
                                     fileName = d.getString("fileName") ?: "Untitled",
                                     documentCategory = d.getString("documentCategory") ?: "other",
                                     reviewStatus = d.getString("reviewStatus") ?: "pending",
                                     clientName = clientNames[d.getString("clientId")] ?: "Unknown client",
-                                    version = (d.getLong("version") ?: 1L).toInt()
+                                    version = (d.getLong("version") ?: 1L).toInt(),
+                                    dateLabel = d.getTimestamp("uploadTimestamp")?.toDate()
+                                        ?.let { java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()).format(it) } ?: ""
                                 )
                             }
                             fetched.addAll(docs)
@@ -130,7 +133,7 @@ class StaffDocumentsActivity : AppCompatActivity() {
         db.collection("documents").document(doc.documentId)
             .update("reviewStatus", newStatus)
             .addOnSuccessListener {
-                Toast.makeText(this, "${doc.fileName} marked $newStatus", Toast.LENGTH_SHORT).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "${doc.fileName} marked $newStatus")
                 AuditLogger.logEvent(
                     "User", "Document Review",
                     "${doc.fileName} → $newStatus (client: ${doc.clientName})"
@@ -152,7 +155,7 @@ class StaffDocumentsActivity : AppCompatActivity() {
                 loadAssignedDocuments(findViewById(R.id.tvEmptyState))
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to update: ${e.message}", Toast.LENGTH_LONG).show()
+                com.ntuli.apexledger.util.Feedback.show(this, "Failed to update: ${e.message}")
             }
     }
 }

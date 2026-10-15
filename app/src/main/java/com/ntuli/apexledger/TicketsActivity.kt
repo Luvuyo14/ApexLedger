@@ -3,6 +3,8 @@ package com.ntuli.apexledger
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
@@ -19,6 +21,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.ntuli.apexledger.ui.Ticket
 import com.ntuli.apexledger.ui.TicketAdapter
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.Labels
+import com.ntuli.apexledger.util.TicketNumbers
 
 class TicketsActivity : AppCompatActivity() {
 
@@ -27,11 +31,23 @@ class TicketsActivity : AppCompatActivity() {
     private lateinit var adapter: TicketAdapter
 
     private val serviceTypes = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit")
-    private val priorities = listOf("low", "medium", "high")
+    private val priorities = listOf("low", "medium", "high", "urgent")
+
+    // Same filter options as the website's client portal
+    private val statusFilterOptions = listOf(
+        "All statuses", "open", "in_progress", "awaiting_documents",
+        "under_review", "completed", "cancelled"
+    )
+    private val priorityFilterOptions = listOf("All priorities") + priorities
+
+    private var allTickets: List<Ticket> = emptyList()
+    private var selectedStatus = "All statuses"
+    private var selectedPriority = "All priorities"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tickets)
+        com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -40,32 +56,59 @@ class TicketsActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { finish() }
 
         val rv = findViewById<RecyclerView>(R.id.rvTickets)
-        val tvEmptyState = findViewById<TextView>(R.id.tvEmptyState)
         val fab = findViewById<FloatingActionButton>(R.id.fabNewTicket)
         val btnRequestService = findViewById<MaterialButton>(R.id.btnRequestService)
+        val spinnerStatus = findViewById<Spinner>(R.id.spinnerFilterStatus)
+        val spinnerPriority = findViewById<Spinner>(R.id.spinnerFilterPriority)
 
         adapter = TicketAdapter(emptyList())
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
+        spinnerStatus.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item,
+            statusFilterOptions.map { if (it == "All statuses") it else Labels.status(it) }
+        )
+        spinnerStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                selectedStatus = statusFilterOptions[pos]
+                applyFilters()
+            }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
+
+        spinnerPriority.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item,
+            priorityFilterOptions.map { if (it == "All priorities") it else Labels.priority(it) }
+        )
+        spinnerPriority.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                selectedPriority = priorityFilterOptions[pos]
+                applyFilters()
+            }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
+
         fab.setOnClickListener { showNewTicketDialog() }
         btnRequestService.setOnClickListener { showNewTicketDialog() }
 
-        loadTickets(tvEmptyState)
+        loadTickets()
+
+        if (intent.getBooleanExtra("openNew", false)) showNewTicketDialog()
     }
 
     override fun onResume() {
         super.onResume()
-        loadTickets(findViewById(R.id.tvEmptyState))
+        loadTickets()
     }
 
-    private fun loadTickets(tvEmptyState: TextView) {
+    private fun loadTickets() {
         val uid = auth.currentUser?.uid ?: return
         db.collection("tickets")
             .whereEqualTo("clientId", uid)
             .get()
             .addOnSuccessListener { result ->
-                val tickets = result.documents.map { d ->
+                allTickets = result.documents.map { d ->
                     Ticket(
                         ticketId = d.id,
                         ticketNumber = d.getString("ticketNumber") ?: d.id,
@@ -75,10 +118,19 @@ class TicketsActivity : AppCompatActivity() {
                         description = d.getString("description") ?: "",
                         dueDate = d.getString("dueDate") ?: ""
                     )
-                }
-                adapter.updateData(tickets)
-                tvEmptyState.visibility = if (tickets.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                }.sortedByDescending { it.ticketNumber }
+                applyFilters()
             }
+    }
+
+    private fun applyFilters() {
+        var filtered = allTickets
+        if (selectedStatus != "All statuses") filtered = filtered.filter { it.status == selectedStatus }
+        if (selectedPriority != "All priorities") filtered = filtered.filter { it.priority == selectedPriority }
+        adapter.updateData(filtered)
+        findViewById<TextView>(R.id.tvTicketCount).text = "${filtered.size} ticket(s)"
+        findViewById<TextView>(R.id.tvEmptyState).visibility =
+            if (filtered.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun showNewTicketDialog() {
@@ -89,11 +141,11 @@ class TicketsActivity : AppCompatActivity() {
 
         spinnerServiceType.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            serviceTypes.map { it.replace("_", " ").replaceFirstChar { c -> c.uppercase() } }
+            serviceTypes.map { Labels.service(it) }
         )
         spinnerPriority.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            priorities.map { it.replaceFirstChar { c -> c.uppercase() } }
+            priorities.map { Labels.priority(it) }
         )
         spinnerPriority.setSelection(priorities.indexOf("medium"))
 
@@ -106,7 +158,7 @@ class TicketsActivity : AppCompatActivity() {
                 if (description.isNotEmpty()) {
                     createTicket(serviceType, priority, description)
                 } else {
-                    Toast.makeText(this, "Please describe your request", Toast.LENGTH_SHORT).show()
+                    com.ntuli.apexledger.util.Feedback.show(this, "Please describe your request")
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -115,27 +167,28 @@ class TicketsActivity : AppCompatActivity() {
 
     private fun createTicket(serviceType: String, priority: String, description: String) {
         val uid = auth.currentUser?.uid ?: return
-        val ticketNumber = "TCK-${System.currentTimeMillis()}"
 
-        val ticketData = hashMapOf(
-            "clientId" to uid,
-            "ticketNumber" to ticketNumber,
-            "serviceType" to serviceType,
-            "priority" to priority,
-            "status" to "open",
-            "description" to description,
-            "dueDate" to "",
-            "createdDate" to com.google.firebase.Timestamp.now()
-        )
+        TicketNumbers.generate(db, serviceType) { ticketNumber ->
+            val ticketData = hashMapOf(
+                "clientId" to uid,
+                "ticketNumber" to ticketNumber,
+                "serviceType" to serviceType,
+                "priority" to priority,
+                "status" to "open",
+                "description" to description,
+                "dueDate" to "",
+                "createdDate" to com.google.firebase.Timestamp.now()
+            )
 
-        db.collection("tickets").add(ticketData)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Ticket created!", Toast.LENGTH_SHORT).show()
-                AuditLogger.logEvent("Client", "Create Ticket", "$ticketNumber ($serviceType, $priority priority)")
-                loadTickets(findViewById(R.id.tvEmptyState))
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+            db.collection("tickets").add(ticketData)
+                .addOnSuccessListener {
+                    com.ntuli.apexledger.util.Feedback.show(this, "Ticket $ticketNumber created!")
+                    AuditLogger.logEvent("Client", "Create Ticket", "$ticketNumber ($serviceType, $priority priority)")
+                    loadTickets()
+                }
+                .addOnFailureListener { e ->
+                    com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
+                }
+        }
     }
 }
