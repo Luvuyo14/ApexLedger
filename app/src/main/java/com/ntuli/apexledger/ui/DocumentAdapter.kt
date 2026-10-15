@@ -17,6 +17,7 @@ class DocumentAdapter(private var items: List<Document>) :
         val tvMeta: TextView = view.findViewById(R.id.tvDocMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvDocStatus)
         val tvFileType: TextView = view.findViewById(R.id.tvFileType)
+        val tvAccountant: TextView = view.findViewById(R.id.tvDocAccountant)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DocViewHolder {
@@ -36,6 +37,11 @@ class DocumentAdapter(private var items: List<Document>) :
             )
         }
         com.ntuli.apexledger.util.FileTypes.apply(holder.tvFileType, doc.fileName)
+        // Which accountant (and which kind) this document was routed to
+        val duty = com.ntuli.apexledger.util.Labels.service(doc.documentCategory)
+        holder.tvAccountant.text =
+            if (doc.accountantName.isNotEmpty()) "Assigned to ${doc.accountantName}  •  $duty"
+            else "Not assigned to an accountant yet"
         holder.tvVersion.text = "v${doc.version}"
         holder.tvMeta.text = listOf(Labels.service(doc.documentCategory), doc.dateLabel).filter { it.isNotEmpty() }.joinToString(" • ")
         holder.tvStatus.text = Labels.status(doc.reviewStatus)

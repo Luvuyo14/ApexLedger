@@ -100,6 +100,19 @@
             android:layout_marginStart="10dp" />
 
         <TextView
+            android:id="@+id/btnDeleteUser"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete"
+            android:textColor="@color/danger_dark"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:background="@drawable/bg_input_field"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
             android:id="@+id/btnToggleActive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

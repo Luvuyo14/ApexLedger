@@ -15,6 +15,7 @@ class TicketAdapter(private var items: List<Ticket>) :
 
     class TicketViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvNumber: TextView = view.findViewById(R.id.tvTicketNumber)
+        val tvCreated: TextView = view.findViewById(R.id.tvCreated)
         val tvService: TextView = view.findViewById(R.id.tvTicketService)
         val tvMeta: TextView = view.findViewById(R.id.tvTicketMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvStatusBadge)
@@ -32,10 +33,17 @@ class TicketAdapter(private var items: List<Ticket>) :
     override fun onBindViewHolder(holder: TicketViewHolder, position: Int) {
         val ticket = items[position]
         holder.tvNumber.text = ticket.ticketNumber
+        holder.tvCreated.text = if (ticket.createdLabel.isNotEmpty()) "Created ${ticket.createdLabel}" else ""
+        holder.tvCreated.visibility = if (ticket.createdLabel.isNotEmpty()) View.VISIBLE else View.GONE
         holder.tvService.text = Labels.service(ticket.serviceType)
 
-        holder.tvMeta.text = ticket.clientName
-        holder.tvMeta.visibility = if (ticket.clientName.isEmpty()) View.GONE else View.VISIBLE
+        val meta = when {
+            ticket.clientName.isNotEmpty() -> ticket.clientName
+            ticket.accountantName.isNotEmpty() -> "Assigned to ${ticket.accountantName}"
+            else -> ""
+        }
+        holder.tvMeta.text = meta
+        holder.tvMeta.visibility = if (meta.isEmpty()) View.GONE else View.VISIBLE
 
         holder.tvStatus.text = Labels.status(ticket.status)
         holder.tvStatus.setBackgroundResource(Badges.status(ticket.status))

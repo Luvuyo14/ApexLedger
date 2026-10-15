@@ -56,13 +56,29 @@ class RegisterActivity : AppCompatActivity() {
         etTaxNumber = findViewById(R.id.etTaxNumber)
         tvErrorTaxNumber = findViewById(R.id.tvErrorTaxNumber)
         tvErrorService = findViewById(R.id.tvErrorService)
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelRegister).setOnClickListener { finish() }
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelRegister).setOnClickListener {
+            if (intent.getBooleanExtra("sso", false)) auth.signOut()
+            finish()
+        }
         val spinnerServicePreference = findViewById<Spinner>(R.id.spinnerServicePreference)
         etAddress = findViewById(R.id.etAddress)
         etPassword = findViewById(R.id.etPassword)
         etConfirmPassword = findViewById(R.id.etConfirmPassword)
         val btnRegisterClient = findViewById<MaterialButton>(R.id.btnRegisterClient)
         val tvStatus = findViewById<TextView>(R.id.tvStatus)
+
+        // Opened after "Continue with Google" for someone who has no profile yet:
+        // no password needed, name and email come from their Google account.
+        val ssoMode = intent.getBooleanExtra("sso", false)
+        if (ssoMode) {
+            etFullName.setText(intent.getStringExtra("name") ?: "")
+            etEmail.setText(intent.getStringExtra("email") ?: "")
+            etEmail.isEnabled = false
+            listOf(R.id.lblPassword, R.id.etPassword, R.id.tvErrorPassword, R.id.lblConfirmPassword,
+                R.id.etConfirmPassword, R.id.tvErrorConfirmPassword).forEach { findViewById<View>(it).visibility = View.GONE }
+            findViewById<TextView>(R.id.tvRegisterTitle).text = "Complete your profile"
+            btnRegisterClient.text = "Finish"
+        }
         val tvBackToLogin = findViewById<TextView>(R.id.tvBackToLogin)
 
         tvErrorFullName = findViewById(R.id.tvErrorFullName)
@@ -74,7 +90,7 @@ class RegisterActivity : AppCompatActivity() {
 
         spinnerServicePreference.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            listOf("Select a service...") + servicePreferences.map { Labels.service(it) }
+            listOf("No preference (optional)") + servicePreferences.map { Labels.service(it) }
         )
 
         tvBackToLogin.setOnClickListener { finish() }
@@ -114,105 +130,115 @@ class RegisterActivity : AppCompatActivity() {
                 showFieldError(etTaxNumber, tvErrorTaxNumber, "Tax number must be exactly 10 digits")
                 hasError = true
             }
-            if (servicePreference.isEmpty()) {
-                tvErrorService.text = "Please select a service"
-                tvErrorService.visibility = View.VISIBLE
-                hasError = true
-            }
             if (address.isEmpty()) {
                 showFieldError(etAddress, tvErrorAddress, "Address is required")
                 hasError = true
             }
-            if (password.isEmpty()) {
-                showFieldError(etPassword, tvErrorPassword, "Password is required")
-                hasError = true
-            } else if (!passwordRegex.matches(password)) {
-                showFieldError(
-                    etPassword, tvErrorPassword,
-                    "Password needs 8+ chars, 1 uppercase letter and 1 number"
-                )
-                hasError = true
-            }
-            if (confirmPassword != password) {
-                showFieldError(etConfirmPassword, tvErrorConfirmPassword, "Passwords do not match")
-                hasError = true
+            if (!ssoMode) {
+                if (password.isEmpty()) {
+                    showFieldError(etPassword, tvErrorPassword, "Password is required")
+                    hasError = true
+                } else if (!passwordRegex.matches(password)) {
+                    showFieldError(
+                        etPassword, tvErrorPassword,
+                        "Password needs 8+ chars, 1 uppercase letter and 1 number"
+                    )
+                    hasError = true
+                }
+                if (confirmPassword != password) {
+                    showFieldError(etConfirmPassword, tvErrorConfirmPassword, "Passwords do not match")
+                    hasError = true
+                }
             }
 
             if (hasError) return@setOnClickListener
 
             btnRegisterClient.isEnabled = false
 
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener { result ->
-                    val newUser = result.user
-                    if (newUser == null) {
-                        btnRegisterClient.isEnabled = true
-                        tvStatus.setTextColor(0xFFD32F2F.toInt())
-                        tvStatus.text = "Registration failed. Please try again."
-                        return@addOnSuccessListener
-                    }
+            val onAccountReady: (FirebaseUser?) -> Unit = ready@{ newUser ->
+                if (newUser == null) {
+                    btnRegisterClient.isEnabled = true
+                    tvStatus.setTextColor(0xFFD32F2F.toInt())
+                    tvStatus.text = "Registration failed. Please try again."
+                    return@ready
+                }
 
-                    val dutyKeyword = when (servicePreference) {
-                        "tax_return" -> "Taxation"
-                        "payroll" -> "Payroll"
-                        "bookkeeping" -> "Bookkeeping"
-                        "advisory" -> "Advisory"
-                        "audit" -> "Audit"
-                        else -> ""
-                    }
+                val dutyKeyword = when (servicePreference) {
+                    "tax_return" -> "Taxation"
+                    "payroll" -> "Payroll"
+                    "bookkeeping" -> "Bookkeeping"
+                    "advisory" -> "Advisory"
+                    "audit" -> "Audit"
+                    else -> ""
+                }
 
-                    db.collection("users")
-                        .whereEqualTo("role", "accountant")
-                        .get()
-                        .addOnSuccessListener { accountantsResult ->
-                            val matchedAccountant = accountantsResult.documents.firstOrNull { doc ->
-                                val department = doc.getString("department") ?: ""
-                                dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword) &&
-                                        doc.getBoolean("active") != false
-                            }
+                db.collection("users")
+                    .whereEqualTo("role", "accountant")
+                    .get()
+                    .addOnSuccessListener { accountantsResult ->
+                        val matchedAccountant = accountantsResult.documents.firstOrNull { doc ->
+                            val department = doc.getString("department") ?: ""
+                            dutyKeyword.isNotEmpty() && department.startsWith(dutyKeyword) &&
+                                    doc.getBoolean("active") != false
+                        }
 
-                            val profile = hashMapOf(
-                                "full_name" to fullName,
-                                "email" to email,
-                                "phone" to phone,
-                                "taxNumber" to taxNumber,
-                                "servicePreference" to servicePreference,
-                                "address" to address,
-                                "role" to "client",
-                                "assignedAccountantId" to (matchedAccountant?.id ?: ""),
-                                "notify_email" to true,
-                                "notify_sms" to false,
-                                "notify_push" to true,
-                                "created_at" to com.google.firebase.Timestamp.now()
-                            )
+                        val profile = hashMapOf(
+                            "full_name" to fullName,
+                            "email" to email,
+                            "phone" to phone,
+                            "taxNumber" to taxNumber,
+                            "servicePreference" to servicePreference,
+                            "address" to address,
+                            "role" to "client",
+                            "assignedAccountantId" to (matchedAccountant?.id ?: ""),
+                            "notify_email" to true,
+                            "notify_sms" to false,
+                            "notify_push" to true,
+                            "created_at" to com.google.firebase.Timestamp.now()
+                        )
 
-                            db.collection("users").document(newUser.uid).set(profile)
-                                .addOnSuccessListener {
-                                    btnRegisterClient.isEnabled = true
-                                    // Sign out so the person logs in explicitly,
-                                    // matching the "You can now sign in" message.
-                                    auth.signOut()
-                                    tvStatus.setTextColor(0xFF2E7D32.toInt())
-                                    tvStatus.text = if (matchedAccountant != null) {
-                                        "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}. You can now sign in."
+                        db.collection("users").document(newUser.uid).set(profile)
+                            .addOnSuccessListener {
+                                btnRegisterClient.isEnabled = true
+                                if (ssoMode) {
+                                    com.ntuli.apexledger.util.AuditLogger.logEvent("Client", "Login", "Google single sign-on (new profile)")
+                                    startActivity(android.content.Intent(this, DashboardActivity::class.java))
+                                    finishAffinity()
+                                    return@addOnSuccessListener
+                                }
+                                // Sign out so the person logs in explicitly,
+                                // matching the "You can now sign in" message.
+                                auth.signOut()
+                                tvStatus.setTextColor(0xFF2E7D32.toInt())
+                                tvStatus.text = if (matchedAccountant != null) {
+                                    "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}. You can now sign in."
+                                } else {
+                                    if (servicePreference.isEmpty()) {
+                                        "Account created! You can now sign in. An accountant is assigned to you when you request a service."
                                     } else {
-                                        "Account created! No accountant currently handles this duty — an admin will assign one shortly. You can now sign in."
+                                        "Account created! No accountant currently handles this service. An admin will assign one shortly. You can now sign in."
                                     }
                                 }
-                                .addOnFailureListener { e ->
-                                    rollbackAccount(newUser)
-                                    btnRegisterClient.isEnabled = true
-                                    tvStatus.setTextColor(0xFFD32F2F.toInt())
-                                    tvStatus.text = "Could not save your profile, so the account was not created: ${e.message}. Please try again."
-                                }
-                        }
-                        .addOnFailureListener { e ->
-                            rollbackAccount(newUser)
-                            btnRegisterClient.isEnabled = true
-                            tvStatus.setTextColor(0xFFD32F2F.toInt())
-                            tvStatus.text = "Could not complete registration, so the account was not created: ${e.message}. Please try again."
-                        }
-                }
+                            }
+                            .addOnFailureListener { e ->
+                                rollbackAccount(newUser)
+                                btnRegisterClient.isEnabled = true
+                                tvStatus.setTextColor(0xFFD32F2F.toInt())
+                                tvStatus.text = "Could not save your profile, so the account was not created: ${e.message}. Please try again."
+                            }
+                    }
+                    .addOnFailureListener { e ->
+                        rollbackAccount(newUser)
+                        btnRegisterClient.isEnabled = true
+                        tvStatus.setTextColor(0xFFD32F2F.toInt())
+                        tvStatus.text = "Could not complete registration, so the account was not created: ${e.message}. Please try again."
+                    }
+            }
+
+            if (ssoMode) {
+                onAccountReady(auth.currentUser)
+            } else auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener { result -> onAccountReady(result.user) }
                 .addOnFailureListener { e ->
                     btnRegisterClient.isEnabled = true
                     if (e is com.google.firebase.auth.FirebaseAuthUserCollisionException) {

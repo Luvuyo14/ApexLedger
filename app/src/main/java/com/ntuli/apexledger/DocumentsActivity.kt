@@ -30,26 +30,81 @@ class DocumentsActivity : AppCompatActivity() {
     private lateinit var adapter: DocumentAdapter
     private lateinit var spinnerCategory: Spinner
 
-    private val categories = listOf("tax_return", "payroll", "bookkeeping", "advisory", "other")
+    private val categories = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit", "other")
     private var pendingUri: Uri? = null
 
     // Matches the "max 10MB" text shown in the upload dropzone
     private val maxFileSizeBytes = 10L * 1024 * 1024
+
+    // The picked file is copied into the app's own cache straight away, while the permission is
+    // fresh. That way a file the phone refuses to share is reported immediately, with the reason.
+    private var pendingFile: java.io.File? = null
 
     private val pickFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
             pendingUri = uri
-            // Keep read access even if the app is backgrounded between
-            // picking the file and tapping Upload.
             try {
-                contentResolver.takePersistableUriPermission(
-                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: SecurityException) { /* some providers don't support it */ }
-            com.ntuli.apexledger.util.Feedback.show(this, "File selected. Tap 'Upload Securely' to continue.")
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) { /* some providers don't support it */ }
+            copyPickedFile(uri)
         }
+    }
+
+    private fun copyPickedFile(uri: Uri) {
+        var name = "document"
+        var size = 0L
+        try {
+            contentResolver.query(uri, null, null, null, null)?.use { c ->
+                if (c.moveToFirst()) {
+                    val n = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    val s = c.getColumnIndex(OpenableColumns.SIZE)
+                    if (n >= 0) name = c.getString(n) ?: name
+                    if (s >= 0) size = c.getLong(s)
+                }
+            }
+        } catch (_: Exception) { }
+
+        findViewById<TextView>(R.id.tvDropTitle).text = "Reading $name..."
+        Thread {
+            var error: String? = null
+            val out = java.io.File(cacheDir, "upload_${System.currentTimeMillis()}.tmp")
+            try {
+                val input = contentResolver.openInputStream(uri)
+                    ?: throw java.io.IOException("the app that holds this file would not share it")
+                input.use { i -> out.outputStream().use { o -> i.copyTo(o) } }
+                if (out.length() == 0L) {
+                    throw java.io.IOException(
+                        "the file is empty (0 bytes). If it is stored in the cloud (Drive, Photos), " +
+                                "open it once so it downloads to the phone, or pick it from Downloads instead"
+                    )
+                }
+            } catch (e: Throwable) {
+                error = (e.message ?: e.javaClass.simpleName)
+                out.delete()
+            }
+            runOnUiThread {
+                if (error != null) {
+                    pendingFile = null
+                    pendingUri = null
+                    findViewById<TextView>(R.id.tvDropTitle).text = "Tap to upload a file"
+                    com.ntuli.apexledger.util.Feedback.show(this, "Could not read that file: $error")
+                } else {
+                    pendingFile?.delete()
+                    pendingFile = out
+                    findViewById<TextView>(R.id.tvDropTitle).text = name
+                    findViewById<TextView>(R.id.tvDropHint).text =
+                        "${formatSize(out.length())} - tap Upload Securely to continue"
+                }
+            }
+        }.start()
+    }
+
+    private fun formatSize(bytes: Long): String = when {
+        bytes >= 1024 * 1024 -> String.format(java.util.Locale.getDefault(), "%.2f MB", bytes / (1024.0 * 1024))
+        bytes >= 1024 -> String.format(java.util.Locale.getDefault(), "%.0f KB", bytes / 1024.0)
+        else -> "$bytes B"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,7 +137,7 @@ class DocumentsActivity : AppCompatActivity() {
 
         btnUploadSecurely.setOnClickListener {
             val uri = pendingUri
-            if (uri == null) {
+            if (uri == null || pendingFile == null) {
                 com.ntuli.apexledger.util.Feedback.show(this, "Please select a file first")
             } else {
                 uploadDocument(uri, categories[spinnerCategory.selectedItemPosition])
@@ -115,6 +170,7 @@ class DocumentsActivity : AppCompatActivity() {
                         documentId = d.id,
                         fileName = d.getString("fileName") ?: "Untitled",
                         documentCategory = d.getString("documentCategory") ?: "other",
+                        accountantName = d.getString("accountantName") ?: "",
                         reviewStatus = d.getString("reviewStatus") ?: "pending",
                         version = (d.getLong("version") ?: 1L).toInt(),
                         dateLabel = d.getTimestamp("uploadTimestamp")?.toDate()
@@ -207,20 +263,32 @@ class DocumentsActivity : AppCompatActivity() {
         uri: Uri, uid: String, fileName: String, category: String, mimeType: String,
         sizeFromProvider: Long, newVersion: Int, previousIds: List<String>
     ) {
+        // A document goes to the accountant who handles its SERVICE (e.g. Tax Return -> Taxation),
+        // not simply to the client's own accountant.
+        com.ntuli.apexledger.util.AccountantRouter.pick(db, uid, category, "tickets") { pick ->
+            saveToFirestore(uri, uid, fileName, category, mimeType, sizeFromProvider, newVersion, previousIds, pick)
+        }
+    }
+
+    private fun saveToFirestore(
+        uri: Uri, uid: String, fileName: String, category: String, mimeType: String,
+        sizeFromProvider: Long, newVersion: Int, previousIds: List<String>,
+        pick: com.ntuli.apexledger.util.AccountantRouter.Pick?
+    ) {
         val btn = findViewById<MaterialButton>(R.id.btnUploadSecurely)
         btn.isEnabled = false
         btn.text = "Reading file..."
 
         Thread {
             val bytes = try {
-                contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                pendingFile?.takeIf { it.exists() }?.readBytes()
             } catch (e: Exception) {
                 null
             }
             runOnUiThread {
                 if (bytes == null || bytes.isEmpty()) {
                     resetUploadButton(btn)
-                    com.ntuli.apexledger.util.Feedback.show(this, "Could not read that file. Please pick it again.")
+                    com.ntuli.apexledger.util.Feedback.show(this, "The selected file is no longer available. Please pick it again.")
                     return@runOnUiThread
                 }
                 if (bytes.size > maxFileSizeBytes) {
@@ -238,6 +306,8 @@ class DocumentsActivity : AppCompatActivity() {
                     "chunkCount" to chunkCount,
                     "mimeType" to mimeType,
                     "documentCategory" to category,
+                    "accountantId" to (pick?.id ?: ""),
+                    "accountantName" to (pick?.name ?: ""),
                     "fileSizeBytes" to bytes.size.toLong(),
                     "reviewStatus" to "pending",
                     "version" to newVersion,
@@ -270,7 +340,7 @@ class DocumentsActivity : AppCompatActivity() {
                                 docRef.update("uploadComplete", true)
                                     .addOnCompleteListener {
                                         resetUploadButton(btn)
-                                        onUploadFinished(uid, fileName, category, newVersion)
+                                        onUploadFinished(uid, fileName, category, newVersion, pick, docRef.id)
                                     }
                             }
                         }
@@ -319,8 +389,12 @@ class DocumentsActivity : AppCompatActivity() {
         btn.text = "Upload Securely"
     }
 
-    private fun onUploadFinished(uid: String, fileName: String, category: String, newVersion: Int) {
-        val message = if (newVersion > 1) "Upload complete! This is version $newVersion." else "Upload complete!"
+    private fun onUploadFinished(
+        uid: String, fileName: String, category: String, newVersion: Int,
+        pick: com.ntuli.apexledger.util.AccountantRouter.Pick?, docId: String
+    ) {
+        val assigned = if (pick != null) " Assigned to ${pick.name} (${Labels.service(category)})." else ""
+        val message = (if (newVersion > 1) "Upload complete! This is version $newVersion." else "Upload complete!") + assigned
         com.ntuli.apexledger.util.Feedback.show(this, message)
 
         AuditLogger.logEvent(
@@ -328,20 +402,23 @@ class DocumentsActivity : AppCompatActivity() {
             "$fileName (version $newVersion, category: $category)"
         )
 
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { clientDoc ->
-                val accountantId = clientDoc.getString("assignedAccountantId")
-                if (!accountantId.isNullOrEmpty()) {
-                    NotificationHelper.notify(
-                        recipientUid = accountantId,
-                        type = "document_upload",
-                        title = "New document to review",
-                        body = "$fileName was uploaded (version $newVersion)."
-                    )
-                }
-            }
+        if (pick != null) {
+            NotificationHelper.notify(
+                recipientUid = pick.id,
+                type = "document_upload",
+                title = "New ${Labels.service(category)} document",
+                body = "$fileName was uploaded (version $newVersion).",
+                targetId = docId
+            )
+        } else {
+            com.ntuli.apexledger.util.Feedback.show(this, "No accountant handles ${Labels.service(category)} yet. An administrator will pick it up.")
+        }
 
         pendingUri = null
+        pendingFile?.delete()
+        pendingFile = null
+        findViewById<TextView>(R.id.tvDropTitle).text = "Tap to upload a file"
+        findViewById<TextView>(R.id.tvDropHint).text = "PDF, JPG, PNG • max 10MB"
         loadDocuments(findViewById(R.id.tvEmptyState))
     }
 

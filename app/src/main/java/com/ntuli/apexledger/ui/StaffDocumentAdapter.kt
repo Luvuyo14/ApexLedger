@@ -20,6 +20,7 @@ class StaffDocumentAdapter(
         val tvMeta: TextView = view.findViewById(R.id.tvDocMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvDocStatus)
         val tvFileType: TextView = view.findViewById(R.id.tvFileType)
+        val tvAccountant: TextView = view.findViewById(R.id.tvDocAccountant)
         val reviewActionsRow: View = view.findViewById(R.id.reviewActionsRow)
         val btnApprove: MaterialButton = view.findViewById(R.id.btnApprove)
         val btnReject: MaterialButton = view.findViewById(R.id.btnReject)
@@ -42,6 +43,11 @@ class StaffDocumentAdapter(
             )
         }
         com.ntuli.apexledger.util.FileTypes.apply(holder.tvFileType, doc.fileName)
+        // Which accountant (and which kind) this document was routed to
+        val duty = com.ntuli.apexledger.util.Labels.service(doc.documentCategory)
+        holder.tvAccountant.text =
+            if (doc.accountantName.isNotEmpty()) "Assigned to ${doc.accountantName}  •  $duty"
+            else "Not assigned to an accountant yet"
         holder.tvClient.text = doc.clientName.ifEmpty { "Unknown client" }
         holder.tvMeta.text = listOf(
             com.ntuli.apexledger.util.Labels.service(doc.documentCategory),

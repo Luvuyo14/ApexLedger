@@ -7,5 +7,6 @@ class ApexApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ThemeMode.apply(this)
+        com.ntuli.apexledger.util.NotificationCenter.init(this)
     }
 }

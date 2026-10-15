@@ -24,6 +24,7 @@ class MessageAdapter(
     class BubbleViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvBody: TextView = view.findViewById(R.id.tvMessageBody)
         val tvTime: TextView = view.findViewById(R.id.tvMessageTime)
+        val tvAttachment: TextView = view.findViewById(R.id.tvAttachment)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -37,6 +38,20 @@ class MessageAdapter(
         val h = holder as BubbleViewHolder
         h.tvBody.text = message.messageBody
         h.tvTime.text = message.timeLabel
+        if (message.attachmentDocId.isNotEmpty()) {
+            h.tvAttachment.visibility = View.VISIBLE
+            h.tvAttachment.text = "Attachment: ${message.attachmentName}  (tap to open)"
+            h.tvAttachment.paintFlags = h.tvAttachment.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
+            h.tvAttachment.setOnClickListener {
+                val ctx = h.itemView.context
+                ctx.startActivity(
+                    android.content.Intent(ctx, com.ntuli.apexledger.DocumentViewerActivity::class.java)
+                        .putExtra("docId", message.attachmentDocId)
+                )
+            }
+        } else {
+            h.tvAttachment.visibility = View.GONE
+        }
         h.tvTime.visibility = if (message.timeLabel.isEmpty()) View.GONE else View.VISIBLE
     }
 

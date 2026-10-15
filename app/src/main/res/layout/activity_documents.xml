@@ -122,6 +122,7 @@
                     android:layout_marginBottom="4dp" />
 
                 <Spinner
+        android:background="@drawable/bg_spinner"
                     android:id="@+id/spinnerDocCategory"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -137,6 +138,7 @@
                     android:layout_marginBottom="12dp">
 
                     <TextView
+                        android:id="@+id/tvDropTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tap to upload a file"
@@ -144,6 +146,7 @@
                         android:textSize="14sp" />
 
                     <TextView
+                        android:id="@+id/tvDropHint"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="PDF, JPG, PNG • max 10MB"
@@ -157,6 +160,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:text="Upload Securely"
+                    android:textColor="@color/on_primary"
                     android:textAllCaps="false"
                     android:textStyle="bold"
                     android:backgroundTint="@color/primary" />

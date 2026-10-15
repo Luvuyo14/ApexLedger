@@ -39,6 +39,7 @@ class OverdueTicketAdapter(private var items: List<Ticket>) :
         holder.tvStatus.setBackgroundResource(R.drawable.badge_status_overdue)
 
         holder.tvPriority.visibility = View.GONE
+        holder.itemView.findViewById<View>(R.id.tvCreated).visibility = View.GONE
         holder.tvChip.visibility = View.GONE
         holder.tvDue.text = "Due ${DateUtils.display(ticket.dueDate)}"
     }

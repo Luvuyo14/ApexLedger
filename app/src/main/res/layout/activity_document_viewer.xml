@@ -142,6 +142,28 @@
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
+                        android:text="Assigned to"
+                        android:textColor="@color/gray_500"
+                        android:textSize="13sp" />
+                    <TextView
+                        android:id="@+id/tvAssignedTo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="13sp" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/gray_200" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
                         android:text="Version"
                         android:textColor="@color/gray_500"
                         android:textSize="13sp" />

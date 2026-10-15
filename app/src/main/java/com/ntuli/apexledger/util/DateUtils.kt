@@ -51,4 +51,8 @@ object DateUtils {
             null
         }
     }
+
+    /** The day a record was created, e.g. "14 Oct 2026" (empty if unknown). */
+    fun created(ts: com.google.firebase.Timestamp?): String =
+        ts?.toDate()?.let { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(it) } ?: ""
 }

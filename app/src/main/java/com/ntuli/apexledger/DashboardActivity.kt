@@ -25,6 +25,7 @@ import com.ntuli.apexledger.util.Labels
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.jvm.java
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -32,9 +33,38 @@ class DashboardActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var ticketAdapter: TicketAdapter
 
+
+    private val notificationPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { }
+
+    private fun askNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        com.ntuli.apexledger.util.NotificationCenter.observe(this) { count ->
+            val badge = findViewById<TextView>(R.id.tvBellBadge)
+            badge.text = if (count > 9) "9+" else count.toString()
+            badge.visibility = if (count > 0) android.view.View.VISIBLE else android.view.View.GONE
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        com.ntuli.apexledger.util.NotificationCenter.stopObserving(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
+        askNotificationPermission()
         com.ntuli.apexledger.util.PullRefresh.attach(this) { recreate() }
 
         auth = FirebaseAuth.getInstance()
@@ -152,23 +182,46 @@ class DashboardActivity : AppCompatActivity() {
         card.visibility = View.VISIBLE
     }
 
-    /** Warns when an accountant is waiting for documents or a document was rejected. */
-    private fun renderActionNeeded(awaiting: List<Ticket>) {
+    /**
+     * Action Needed lists only what is still outstanding. An item disappears as soon as the client
+     * does what was asked:
+     *  - "Documents needed": gone once a document for that service is uploaded after the request
+     *  - "Rejected": gone once a corrected version replaces the rejected document
+     */
+    private fun renderActionNeeded() {
         val uid = auth.currentUser?.uid ?: return
-        db.collection("documents")
-            .whereEqualTo("clientId", uid)
-            .whereEqualTo("reviewStatus", "rejected")
-            .get()
-            .addOnCompleteListener { task ->
-                val rejected = if (task.isSuccessful) task.result.size() else 0
+        db.collection("tickets").whereEqualTo("clientId", uid).get().addOnCompleteListener { tTask ->
+            db.collection("documents").whereEqualTo("clientId", uid).get().addOnCompleteListener { dTask ->
                 val card = findViewById<View>(R.id.cardActionNeeded)
-                if (awaiting.isEmpty() && rejected == 0) { card.visibility = View.GONE; return@addOnCompleteListener }
+                val tickets = if (tTask.isSuccessful) tTask.result.documents else emptyList()
+                val allDocs = if (dTask.isSuccessful) dTask.result.documents.filter { it.getBoolean("uploadComplete") != false } else emptyList()
+
+                // Only the newest version of each document counts
+                val superseded = allDocs.flatMap { d ->
+                    (d.get("previousVersionIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                }.toSet()
+                val latest = allDocs.filter { it.id !in superseded }
+
+                val rejected = latest.count { it.getString("reviewStatus") == "rejected" }
+
+                val stillNeeded = tickets.filter { it.getString("status") == "awaiting_documents" }.filter { t ->
+                    val service = t.getString("serviceType") ?: ""
+                    // when the accountant asked for the documents
+                    val since = (t.getTimestamp("statusChangedAt") ?: t.getTimestamp("createdDate"))?.seconds ?: 0L
+                    val uploadedSince = allDocs.any { d ->
+                        d.getString("documentCategory") == service &&
+                                (d.getTimestamp("uploadTimestamp")?.seconds ?: 0L) > since
+                    }
+                    !uploadedSince
+                }
+
+                if (stillNeeded.isEmpty() && rejected == 0) { card.visibility = View.GONE; return@addOnCompleteListener }
                 val container = DashRows.section(card, "Action Needed", R.color.danger_dark)
                 val toDocs = { startActivity(Intent(this, DocumentsActivity::class.java)) }
-                for (t in awaiting) {
+                for (t in stillNeeded) {
                     DashRows.addRow(
-                        container, "Documents needed for ${t.ticketNumber}",
-                        "Your accountant is waiting for your ${Labels.service(t.serviceType)} documents.",
+                        container, "Documents needed for ${t.getString("ticketNumber") ?: "your ticket"}",
+                        "Your accountant is waiting for your ${Labels.service(t.getString("serviceType") ?: "other")} documents.",
                         "Upload", R.drawable.bg_button_primary_small, R.color.on_primary, toDocs
                     )
                 }
@@ -181,6 +234,13 @@ class DashboardActivity : AppCompatActivity() {
                 }
                 card.visibility = View.VISIBLE
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // coming back from Documents (or anywhere) re-checks what is still outstanding
+        renderActionNeeded()
     }
 
     /** Shows the accountant assigned to this client (name, duty, email). */
@@ -222,7 +282,9 @@ class DashboardActivity : AppCompatActivity() {
                         status = doc.getString("status") ?: "open",
                         priority = doc.getString("priority") ?: "medium",
                         description = doc.getString("description") ?: "",
-                        dueDate = doc.getString("dueDate") ?: ""
+                        dueDate = doc.getString("dueDate") ?: "",
+                        createdLabel = com.ntuli.apexledger.util.DateUtils.created(doc.getTimestamp("createdDate")),
+                        accountantName = doc.getString("accountantName") ?: ""
                     )
                 }
 
@@ -232,7 +294,6 @@ class DashboardActivity : AppCompatActivity() {
                 setStat(R.id.statTickets, "Active Tickets", allTickets.count { it.status !in listOf("completed", "cancelled") }.toString())
 
                 renderComingUp(allTickets)
-                renderActionNeeded(allTickets.filter { it.status == "awaiting_documents" })
 
                 val overdueCount = allTickets.count { DateUtils.isOverdue(it.dueDate, it.status) }
                 setStat(R.id.statOverdue, "Overdue", overdueCount.toString())

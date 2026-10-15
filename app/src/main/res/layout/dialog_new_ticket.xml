@@ -23,6 +23,7 @@
         android:textSize="12sp" />
 
     <Spinner
+        android:background="@drawable/bg_spinner"
         android:id="@+id/spinnerServiceType"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -38,6 +39,7 @@
         android:textSize="12sp" />
 
     <Spinner
+        android:background="@drawable/bg_spinner"
         android:id="@+id/spinnerPriority"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -30,6 +30,7 @@ import com.ntuli.apexledger.ui.ServiceStatusAdapter
 import com.ntuli.apexledger.ui.StaffAdapter
 import com.ntuli.apexledger.ui.StaffMember
 import com.ntuli.apexledger.util.AuditLogger
+import com.ntuli.apexledger.util.Feedback
 import com.ntuli.apexledger.util.Labels
 import com.ntuli.apexledger.util.StatCards
 import java.text.SimpleDateFormat
@@ -40,14 +41,16 @@ class AdminPanelActivity : AppCompatActivity() {
 
     private lateinit var db: FirebaseFirestore
     private lateinit var auditAdapter: AuditLogAdapter
-    private lateinit var clientAdapter: ClientAdapter
 
     private val roles = listOf("accountant", "manager", "admin")
     private val departments = listOf(
         "Taxation (accountant)", "Payroll (accountant)", "Bookkeeping (accountant)",
-        "Advisory (accountant)", "Audit (accountant)", "Administration"
+        "Advisory (accountant)", "Audit (accountant)"
     )
+    // What the Duty / Department box offers for the chosen role
+    private var currentDepartments: List<String> = departments
 
+    private val clientServices = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit")
     private var openTicketCount = 0
     private var lastFirestoreDisrupted: Boolean? = null
     private var lastStorageDisrupted: Boolean? = null
@@ -136,7 +139,27 @@ class AdminPanelActivity : AppCompatActivity() {
         val passwordRegex = Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$")
 
         spinnerRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles.map { Labels.title(it) })
-        spinnerDepartment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, departments)
+        fun showDepartmentsFor(role: String) {
+            currentDepartments = when (role) {
+                "admin" -> listOf("Administration")
+                "manager" -> listOf("Operations")
+                else -> departments
+            }
+            spinnerDepartment.adapter = ArrayAdapter(
+                this, android.R.layout.simple_spinner_dropdown_item, currentDepartments.map { it.substringBefore(" (") }
+            )
+            spinnerDepartment.setSelection(0)
+            // Admin and Manager have a fixed department, only accountants choose a duty
+            spinnerDepartment.isEnabled = role == "accountant"
+            spinnerDepartment.alpha = if (role == "accountant") 1f else 0.6f
+        }
+        showDepartmentsFor("accountant")
+        spinnerRole.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                showDepartmentsFor(roles[pos])
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
 
 
         loadStaffList()
@@ -154,7 +177,7 @@ class AdminPanelActivity : AppCompatActivity() {
             val email = etStaffEmail.text.toString().trim()
             val password = etStaffPassword.text.toString()
             val role = roles[spinnerRole.selectedItemPosition]
-            val department = departments[spinnerDepartment.selectedItemPosition]
+            val department = currentDepartments[spinnerDepartment.selectedItemPosition]
 
             var hasError = false
             if (name.isEmpty()) {
@@ -314,6 +337,9 @@ class AdminPanelActivity : AppCompatActivity() {
             }
             toggle.visibility = if (member.uid == myUid) View.GONE else View.VISIBLE
             toggle.setOnClickListener { confirmToggleActive(member) }
+            val delete = row.findViewById<TextView>(R.id.btnDeleteUser)
+            delete.visibility = if (member.uid == myUid) View.GONE else View.VISIBLE
+            delete.setOnClickListener { confirmDelete(member.uid, member.fullName, member.role) }
             container.addView(row)
         }
     }
@@ -334,6 +360,7 @@ class AdminPanelActivity : AppCompatActivity() {
                         AuditLogger.logEvent("Admin", "$verb Staff Account", "${member.fullName} (${member.email})")
                         loadStaffList()
                         loadAccountantsForSpinner()
+                        loadClientsForSpinnerAndList()
                     }
                     .addOnFailureListener { e ->
                         com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
@@ -351,11 +378,22 @@ class AdminPanelActivity : AppCompatActivity() {
         val spinnerClient = findViewById<Spinner>(R.id.spinnerAssignClient)
         val spinnerAccountant = findViewById<Spinner>(R.id.spinnerAssignAccountant)
         val btnAssign = findViewById<MaterialButton>(R.id.btnAssignClient)
-        val rvClients = findViewById<RecyclerView>(R.id.rvClients)
 
-        clientAdapter = ClientAdapter(emptyList())
-        rvClients.layoutManager = LinearLayoutManager(this)
-        rvClients.adapter = clientAdapter
+
+        // "+ Add Client" opens a form, like "+ Add Staff"
+        val cardAddClient = findViewById<View>(R.id.cardAddClient)
+        val btnToggleAddClient = findViewById<TextView>(R.id.btnToggleAddClient)
+        btnToggleAddClient.setOnClickListener {
+            val open = cardAddClient.visibility != View.VISIBLE
+            cardAddClient.visibility = if (open) View.VISIBLE else View.GONE
+            btnToggleAddClient.text = if (open) "Close" else "+ Add Client"
+        }
+        findViewById<Spinner>(R.id.spinnerClientService).adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item, clientServices.map { Labels.service(it) }
+        )
+        com.ntuli.apexledger.util.PasswordToggle.attach(findViewById<EditText>(R.id.etClientPassword))
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCreateClient)
+            .setOnClickListener { createClient() }
 
         loadClientsForSpinnerAndList()
         loadAccountantsForSpinner()
@@ -387,32 +425,168 @@ class AdminPanelActivity : AppCompatActivity() {
     }
 
     private fun loadClientsForSpinnerAndList() {
-        db.collection("users")
-            .whereEqualTo("role", "client")
-            .get()
-            .addOnSuccessListener { result ->
-                clientIds = result.documents.map { it.id }
-                clientNames = result.documents.map { it.getString("full_name") ?: "Unnamed client" }
+        db.collection("users").get().addOnSuccessListener { result ->
+            val everyone = result.documents
+            val clients = everyone.filter { it.getString("role") == "client" }
+                .sortedBy { it.getString("full_name")?.lowercase() ?: "" }
+            val accountants = everyone.filter { it.getString("role") == "accountant" }.associateBy { it.id }
 
-                val displayNames = if (clientNames.isEmpty()) listOf("No clients yet") else clientNames
-                findViewById<Spinner>(R.id.spinnerAssignClient).adapter =
-                    ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayNames)
+            // Assign box dropdown
+            clientIds = clients.map { it.id }
+            clientNames = clients.map { it.getString("full_name") ?: "Unnamed client" }
+            findViewById<Spinner>(R.id.spinnerAssignClient).adapter = ArrayAdapter(
+                this, android.R.layout.simple_spinner_dropdown_item,
+                if (clientNames.isEmpty()) listOf("No clients yet") else clientNames
+            )
 
-                val accountantIdToName = accountantIds.zip(accountantNames).toMap()
-
-                val clientListItems = result.documents.map { d ->
-                    val accId = d.getString("assignedAccountantId") ?: ""
-                    ClientListItem(
-                        uid = d.id,
-                        fullName = d.getString("full_name") ?: "Unnamed client",
-                        email = d.getString("email") ?: "",
-                        assignedAccountantName = accountantIdToName[accId] ?: ""
-                    )
+            // All Clients box
+            findViewById<TextView>(R.id.tvClientsTitle).text = "All Clients (${clients.size})"
+            findViewById<TextView>(R.id.tvClientsEmptyState).visibility =
+                if (clients.isEmpty()) View.VISIBLE else View.GONE
+            val container = findViewById<LinearLayout>(R.id.containerClients)
+            container.removeAllViews()
+            for (c in clients) {
+                val row = layoutInflater.inflate(R.layout.item_client_admin_row, container, false)
+                val name = c.getString("full_name") ?: "Unnamed client"
+                val active = c.getBoolean("active") != false
+                val acc = accountants[c.getString("assignedAccountantId") ?: ""]
+                row.findViewById<TextView>(R.id.tvClientAvatar).text = StatCards.initials(name)
+                row.findViewById<TextView>(R.id.tvClientName).text = name
+                row.findViewById<TextView>(R.id.tvClientEmail).text = c.getString("email") ?: ""
+                row.findViewById<TextView>(R.id.tvClientTax).text =
+                    "Tax number: " + ((c.getString("taxNumber") ?: "").ifEmpty { "not provided" })
+                row.findViewById<TextView>(R.id.tvClientAccountant).text =
+                    if (acc == null) "No accountant assigned yet"
+                    else "Accountant: ${acc.getString("full_name") ?: "-"}  •  " +
+                            ((acc.getString("department") ?: "").substringBefore("(").trim().ifEmpty { "General" }) + " accountant"
+                val status = row.findViewById<TextView>(R.id.tvClientStatus)
+                val toggle = row.findViewById<TextView>(R.id.btnToggleClient)
+                if (active) {
+                    status.text = "Active"
+                    status.setBackgroundResource(R.drawable.badge_status_completed)
+                    toggle.text = "Deactivate"
+                } else {
+                    status.text = "Inactive"
+                    status.setBackgroundResource(R.drawable.badge_status_overdue)
+                    toggle.text = "Activate"
                 }
-                clientAdapter.updateData(clientListItems)
-                findViewById<TextView>(R.id.tvClientsEmptyState).visibility =
-                    if (clientListItems.isEmpty()) View.VISIBLE else View.GONE
+                toggle.setOnClickListener {
+                    confirmToggleActive(StaffMember(uid = c.id, fullName = name, email = c.getString("email") ?: "", role = "client", active = active))
+                }
+                row.findViewById<TextView>(R.id.btnDeleteClient).setOnClickListener { confirmDelete(c.id, name, "client") }
+                container.addView(row)
             }
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // Add a client (admin)
+    // ---------------------------------------------------------------
+    private fun createClient() {
+        val name = findViewById<EditText>(R.id.etClientName).text.toString().trim()
+        val email = findViewById<EditText>(R.id.etClientEmail).text.toString().trim()
+        val password = findViewById<EditText>(R.id.etClientPassword).text.toString()
+        val phone = findViewById<EditText>(R.id.etClientPhone).text.toString().trim()
+        val tax = findViewById<EditText>(R.id.etClientTax).text.toString().trim()
+        val address = findViewById<EditText>(R.id.etClientAddress).text.toString().trim()
+        val service = clientServices[findViewById<Spinner>(R.id.spinnerClientService).selectedItemPosition]
+        val tvStatus = findViewById<TextView>(R.id.tvClientFormStatus)
+        val btn = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCreateClient)
+
+        val problem = when {
+            name.isEmpty() -> "Full name is required"
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Enter a valid email address"
+            !Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$").matches(password) -> "Password needs 8+ characters, 1 uppercase letter and 1 number"
+            phone.isEmpty() -> "Phone number is required"
+            !Regex("^\\d{10}$").matches(tax) -> "Tax number must be exactly 10 digits"
+            address.isEmpty() -> "Address is required"
+            else -> null
+        }
+        if (problem != null) { tvStatus.text = problem; return }
+        tvStatus.text = ""
+        btn.isEnabled = false
+
+        // A second Firebase app creates the login so the admin stays signed in
+        val secondaryApp = FirebaseApp.initializeApp(this, FirebaseApp.getInstance().options, "ClientCreation-${System.currentTimeMillis()}")
+        FirebaseAuth.getInstance(secondaryApp).createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener { result ->
+                val newUid = result.user?.uid
+                if (newUid == null) {
+                    btn.isEnabled = true
+                    tvStatus.text = "Could not get the new user ID"
+                    secondaryApp.delete()
+                    return@addOnSuccessListener
+                }
+                com.ntuli.apexledger.util.AccountantRouter.pick(db, newUid, service, "tickets") { pick ->
+                    val profile = hashMapOf(
+                        "full_name" to name, "email" to email, "phone" to phone, "taxNumber" to tax,
+                        "servicePreference" to service, "address" to address, "role" to "client",
+                        "assignedAccountantId" to (pick?.id ?: ""), "active" to true,
+                        "notify_email" to true, "notify_sms" to false, "notify_push" to true,
+                        "created_at" to com.google.firebase.Timestamp.now()
+                    )
+                    db.collection("users").document(newUid).set(profile)
+                        .addOnSuccessListener {
+                            btn.isEnabled = true
+                            AuditLogger.logEvent("Admin", "Create Client Account", "$name ($email)")
+                            Feedback.show(this, "Client account created for $name")
+                            listOf(R.id.etClientName, R.id.etClientEmail, R.id.etClientPassword, R.id.etClientPhone, R.id.etClientTax, R.id.etClientAddress)
+                                .forEach { findViewById<EditText>(it).setText("") }
+                            findViewById<View>(R.id.cardAddClient).visibility = View.GONE
+                            findViewById<TextView>(R.id.btnToggleAddClient).text = "+ Add Client"
+                            loadClientsForSpinnerAndList()
+                        }
+                        .addOnFailureListener { e ->
+                            btn.isEnabled = true
+                            tvStatus.text = "Profile save failed: ${e.message}"
+                        }
+                    FirebaseAuth.getInstance(secondaryApp).signOut()
+                    secondaryApp.delete()
+                }
+            }
+            .addOnFailureListener { e ->
+                btn.isEnabled = true
+                tvStatus.text = if (e is com.google.firebase.auth.FirebaseAuthUserCollisionException)
+                    "That email is already registered" else "Failed to create the account: ${e.message}"
+                secondaryApp.delete()
+            }
+    }
+
+    // ---------------------------------------------------------------
+    // Delete a client or staff member
+    // ---------------------------------------------------------------
+    private fun confirmDelete(uid: String, name: String, role: String) {
+        val who = if (role == "client") "client" else "staff member"
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Delete $name?")
+            .setMessage(
+                "This removes the $who's profile from the app, so they can no longer use it. " +
+                        "Their tickets, documents and messages are kept for your records. This cannot be undone.\n\n" +
+                        "Tip: use Deactivate instead if they might come back."
+            )
+            .setPositiveButton("Delete") { _, _ ->
+                val finish = {
+                    db.collection("users").document(uid).delete()
+                        .addOnSuccessListener {
+                            AuditLogger.logEvent("Admin", "Delete Account", "$name ($role)")
+                            Feedback.show(this, "$name was deleted")
+                            loadStaffList()
+                            loadClientsForSpinnerAndList()
+                            loadAccountantsForSpinner()
+                        }
+                        .addOnFailureListener { e -> Feedback.show(this, "Failed to delete: ${e.message}") }
+                }
+                if (role == "accountant") {
+                    // Their clients become unassigned so an admin can give them to someone else
+                    db.collection("users").whereEqualTo("assignedAccountantId", uid).get().addOnSuccessListener { mine ->
+                        val batch = db.batch()
+                        mine.documents.forEach { batch.update(it.reference, "assignedAccountantId", "") }
+                        batch.commit().addOnCompleteListener { finish() }
+                    }
+                } else finish()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun loadAccountantsForSpinner() {

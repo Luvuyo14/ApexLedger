@@ -95,62 +95,44 @@ class StaffTicketsActivity : AppCompatActivity() {
     private fun loadAssignedTickets(tvEmptyState: TextView) {
         val uid = auth.currentUser?.uid ?: return
 
-        db.collection("users")
-            .whereEqualTo("assignedAccountantId", uid)
-            .get()
-            .addOnSuccessListener { clientsResult ->
-                val clientDocs = clientsResult.documents
-                val clientIds = clientDocs.map { it.id }
-                val clientNames = clientDocs.associate { it.id to (it.getString("full_name") ?: "Unknown client") }
-
-                if (clientIds.isEmpty()) {
-                    allTickets = emptyList()
-                    applyFilters(tvEmptyState)
-                    return@addOnSuccessListener
-                }
-
-                val batches = clientIds.chunked(10)
-                val fetched = mutableListOf<Ticket>()
-                var completedBatches = 0
-
-                for (batch in batches) {
-                    db.collection("tickets")
-                        .whereIn("clientId", batch)
-                        .get()
-                        .addOnSuccessListener { result ->
-                            // Internal notes live in a staff-only collection so clients can never read them
-                            db.collection("ticket_notes")
-                                .whereIn("clientId", batch)
-                                .get()
-                                .addOnCompleteListener { notesTask ->
-                                    val notes = if (notesTask.isSuccessful)
-                                        notesTask.result.documents.associate { it.id to (it.getString("notes") ?: "") }
-                                    else emptyMap()
-
-                                    val tickets = result.documents.map { d ->
-                                        Ticket(
-                                            ticketId = d.id,
-                                            ticketNumber = d.getString("ticketNumber") ?: d.id,
-                                            serviceType = d.getString("serviceType") ?: "general",
-                                            status = d.getString("status") ?: "open",
-                                            priority = d.getString("priority") ?: "medium",
-                                            description = d.getString("description") ?: "",
-                                            dueDate = d.getString("dueDate") ?: "",
-                                            internalNotes = notes[d.id] ?: "",
-                                            clientId = d.getString("clientId") ?: "",
-                                            clientName = clientNames[d.getString("clientId")] ?: "Unknown client"
-                                        )
-                                    }
-                                    fetched.addAll(tickets)
-                                    completedBatches++
-                                    if (completedBatches == batches.size) {
-                                        allTickets = fetched
-                                        applyFilters(tvEmptyState)
-                                    }
-                                }
-                        }
+        com.ntuli.apexledger.util.StaffData.loadTickets(db, uid) { res ->
+            if (res.docs.isEmpty()) {
+                allTickets = emptyList()
+                applyFilters(tvEmptyState)
+                return@loadTickets
+            }
+            // Internal notes live in a staff-only collection so clients can never read them
+            val clientIds = res.docs.mapNotNull { it.getString("clientId") }.distinct()
+            val batches = clientIds.chunked(10)
+            val notes = mutableMapOf<String, String>()
+            var done = 0
+            for (batch in batches) {
+                db.collection("ticket_notes").whereIn("clientId", batch).get().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        task.result.documents.forEach { notes[it.id] = it.getString("notes") ?: "" }
+                    }
+                    done++
+                    if (done == batches.size) {
+                        allTickets = res.docs.map { d ->
+                            Ticket(
+                                ticketId = d.id,
+                                ticketNumber = d.getString("ticketNumber") ?: d.id,
+                                serviceType = d.getString("serviceType") ?: "general",
+                                status = d.getString("status") ?: "open",
+                                priority = d.getString("priority") ?: "medium",
+                                description = d.getString("description") ?: "",
+                                dueDate = d.getString("dueDate") ?: "",
+                                createdLabel = com.ntuli.apexledger.util.DateUtils.created(d.getTimestamp("createdDate")),
+                                internalNotes = notes[d.id] ?: "",
+                                clientId = d.getString("clientId") ?: "",
+                                clientName = res.clientNames[d.getString("clientId")] ?: "Unknown client"
+                            )
+                        }.sortedByDescending { it.ticketNumber }
+                        applyFilters(tvEmptyState)
+                    }
                 }
             }
+        }
     }
 
     private fun applyFilters(tvEmptyState: TextView) {
@@ -167,7 +149,7 @@ class StaffTicketsActivity : AppCompatActivity() {
 
     private fun updateTicketStatus(ticket: Ticket, newStatus: String) {
         db.collection("tickets").document(ticket.ticketId)
-            .update("status", newStatus)
+            .update("status", newStatus, "statusChangedAt", com.google.firebase.Timestamp.now())
             .addOnSuccessListener {
                 com.ntuli.apexledger.util.Feedback.show(this, "Ticket ${ticket.ticketNumber} updated to ${Labels.status(newStatus)}")
                 AuditLogger.logEvent(
@@ -183,7 +165,8 @@ class StaffTicketsActivity : AppCompatActivity() {
                                 recipientUid = clientId,
                                 type = "ticket_update",
                                 title = "Ticket ${ticket.ticketNumber} updated",
-                                body = "Your ticket status changed to ${Labels.status(newStatus)}."
+                                body = "Your ticket status changed to ${Labels.status(newStatus)}.",
+                                targetId = ticket.ticketId
                             )
                         }
                     }

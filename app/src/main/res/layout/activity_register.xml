@@ -63,6 +63,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:id="@+id/tvRegisterTitle"
                     android:text="New Client Onboarding"
                     android:textColor="@color/navy"
                     android:textStyle="bold"
@@ -160,17 +161,17 @@
                     android:layout_marginBottom="10dp"
                     android:visibility="gone" />
 
-                <TextView android:text="Service Preference *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <TextView android:text="Service Preference (optional)" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <Spinner
                     android:id="@+id/spinnerServicePreference"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:background="@drawable/bg_input_field"
+                    android:background="@drawable/bg_spinner"
                     android:layout_marginTop="4dp" android:layout_marginBottom="4dp" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="This assigns you directly to the accountant who handles that duty."
+                    android:text="Optional. Choosing one assigns you to the accountant who handles that service."
                     android:textColor="@color/gray_400"
                     android:textSize="10sp"
                     android:layout_marginBottom="4dp" />
@@ -205,7 +206,7 @@
                     android:layout_marginBottom="10dp"
                     android:visibility="gone" />
 
-                <TextView android:text="Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <TextView android:id="@+id/lblPassword" android:text="Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
                     android:id="@+id/etPassword"
                     android:layout_width="match_parent"
@@ -226,7 +227,7 @@
                     android:layout_marginBottom="10dp"
                     android:visibility="gone" />
 
-                <TextView android:text="Confirm Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <TextView android:id="@+id/lblConfirmPassword" android:text="Confirm Password *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
                     android:id="@+id/etConfirmPassword"
                     android:layout_width="match_parent"

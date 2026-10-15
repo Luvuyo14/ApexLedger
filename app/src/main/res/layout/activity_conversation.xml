@@ -53,6 +53,15 @@
         android:padding="8dp"
         android:gravity="center_vertical">
 
+        <ImageButton
+            android:id="@+id/btnAttach"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_attach"
+            android:background="@android:color/transparent"
+            android:contentDescription="Attach a document"
+            android:layout_marginEnd="4dp" />
+
         <EditText
             android:id="@+id/etMessageBody"
             android:layout_width="0dp"
@@ -71,7 +80,7 @@
             android:layout_marginStart="8dp"
             android:src="@android:drawable/ic_menu_send"
             android:background="@drawable/bg_brand_icon"
-            app:tint="@color/white" />
+            app:tint="@color/on_primary" />
 
     </LinearLayout>
 

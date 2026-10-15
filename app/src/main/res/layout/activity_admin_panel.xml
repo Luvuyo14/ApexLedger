@@ -195,7 +195,7 @@
                         android:id="@+id/spinnerRole"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
-                        android:background="@drawable/bg_input_field"
+                        android:background="@drawable/bg_spinner"
                         android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
 
                     <TextView android:text="Duty / Department" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
@@ -203,7 +203,7 @@
                         android:id="@+id/spinnerDepartment"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
-                        android:background="@drawable/bg_input_field"
+                        android:background="@drawable/bg_spinner"
                         android:layout_marginTop="4dp" android:layout_marginBottom="6dp" />
 
                     <TextView
@@ -312,7 +312,7 @@
                         android:id="@+id/spinnerAssignClient"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
-                        android:background="@drawable/bg_input_field"
+                        android:background="@drawable/bg_spinner"
                         android:layout_marginTop="4dp" android:layout_marginBottom="12dp" />
 
                     <TextView android:text="Assign to Accountant" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
@@ -320,7 +320,7 @@
                         android:id="@+id/spinnerAssignAccountant"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
-                        android:background="@drawable/bg_input_field"
+                        android:background="@drawable/bg_spinner"
                         android:layout_marginTop="4dp" android:layout_marginBottom="14dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -333,14 +333,166 @@
                         android:backgroundTint="@color/primary"
                         android:layout_marginBottom="14dp" />
 
+
+                </LinearLayout>
+
+                <!-- ALL CLIENTS -->
+                <LinearLayout
+                    android:id="@+id/cardAddClient"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="All Clients"
+                        android:text="Add Client"
                         android:textColor="@color/navy"
                         android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView android:text="Full Name" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <EditText
+                        android:id="@+id/etClientName"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:hint=""
                         android:textSize="14sp"
+                        
+                        android:layout_marginBottom="10dp" />
+                    <TextView android:text="Email" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <EditText
+                        android:id="@+id/etClientEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:hint=""
+                        android:textSize="14sp"
+                        android:inputType="textEmailAddress"
+                        android:layout_marginBottom="10dp" />
+                    <TextView android:text="Temporary Password" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <EditText
+                        android:id="@+id/etClientPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:hint="Min 8 chars, 1 uppercase, 1 number"
+                        android:textSize="14sp"
+                        android:inputType="textPassword"
+                        android:layout_marginBottom="10dp" />
+                    <TextView android:text="Phone" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <EditText
+                        android:id="@+id/etClientPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:hint="082 000 0000"
+                        android:textSize="14sp"
+                        android:inputType="phone"
+                        android:layout_marginBottom="10dp" />
+                    <TextView android:text="Tax Number (10 digits)" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <EditText
+                        android:id="@+id/etClientTax"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:hint="e.g. 1234567890"
+                        android:textSize="14sp"
+                        android:inputType="number" android:maxLength="10"
+                        android:layout_marginBottom="10dp" />
+                    <TextView android:text="Service Preference" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <Spinner
+                        android:id="@+id/spinnerClientService"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_spinner"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView android:text="Physical Address" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="4dp" />
+                    <EditText
+                        android:id="@+id/etClientAddress"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_input_field"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:hint="Street, suburb, city, postal code"
+                        android:textSize="14sp"
+                        
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:id="@+id/tvClientFormStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/danger_dark"
+                        android:textSize="12sp"
                         android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCreateClient"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Create Client"
+                        android:textColor="@color/on_primary"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:backgroundTint="@color/success" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card_stroke"
+                    android:padding="16dp"
+                    android:layout_marginTop="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:id="@+id/tvClientsTitle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="All Clients"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/btnToggleAddClient"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="+ Add Client"
+                            android:textColor="@color/on_primary"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:background="@drawable/bg_button_primary_small"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="8dp" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvClientsEmptyState"
@@ -353,12 +505,11 @@
                         android:padding="20dp"
                         android:visibility="gone" />
 
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rvClients"
+                    <LinearLayout
+                        android:id="@+id/containerClients"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false" />
-
+                        android:orientation="vertical" />
                 </LinearLayout>
 
             </LinearLayout>

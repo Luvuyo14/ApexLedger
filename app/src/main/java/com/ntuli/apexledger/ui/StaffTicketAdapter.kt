@@ -23,6 +23,7 @@ class StaffTicketAdapter(
 
     inner class StaffTicketViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvNumber: TextView = view.findViewById(R.id.tvTicketNumber)
+        val tvCreated: TextView = view.findViewById(R.id.tvCreated)
         val tvClient: TextView = view.findViewById(R.id.tvClientName)
         val tvService: TextView = view.findViewById(R.id.tvServiceType)
         val tvDueDate: TextView = view.findViewById(R.id.tvDueDate)
@@ -42,6 +43,8 @@ class StaffTicketAdapter(
     override fun onBindViewHolder(holder: StaffTicketViewHolder, position: Int) {
         val ticket = items[position]
         holder.tvNumber.text = ticket.ticketNumber
+        holder.tvCreated.text = if (ticket.createdLabel.isNotEmpty()) "Created ${ticket.createdLabel}" else ""
+        holder.tvCreated.visibility = if (ticket.createdLabel.isNotEmpty()) View.VISIBLE else View.GONE
         holder.tvClient.text = ticket.clientName.ifEmpty { "Unknown client" }
         holder.tvService.text = Labels.service(ticket.serviceType)
 

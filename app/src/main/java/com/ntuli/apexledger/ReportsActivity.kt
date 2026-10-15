@@ -87,7 +87,7 @@ class ReportsActivity : AppCompatActivity() {
                             .addOnSuccessListener { ticketsResult ->
                                 val tickets = ticketsResult.documents.map { d ->
                                     val clientId = d.getString("clientId") ?: ""
-                                    val accId = clientToAccountant[clientId].orEmpty()
+                                    val accId = (d.getString("accountantId") ?: "").ifEmpty { clientToAccountant[clientId].orEmpty() }
                                     Ticket(
                                         ticketId = d.id,
                                         ticketNumber = d.getString("ticketNumber") ?: d.id,
@@ -96,6 +96,7 @@ class ReportsActivity : AppCompatActivity() {
                                         priority = d.getString("priority") ?: "medium",
                                         description = d.getString("description") ?: "",
                                         dueDate = d.getString("dueDate") ?: "",
+                                        createdLabel = com.ntuli.apexledger.util.DateUtils.created(d.getTimestamp("createdDate")),
                                         clientName = clientNames[clientId] ?: "Unknown client",
                                         accountantName = accountantNames[accId] ?: ""
                                     ) to accId

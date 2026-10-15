@@ -2,6 +2,7 @@
 <resources>
     <style name="Theme.ApexLedger" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/success</item>
         <item name="android:windowBackground">@color/background</item>

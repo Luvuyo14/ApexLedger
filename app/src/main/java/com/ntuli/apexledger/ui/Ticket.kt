@@ -11,5 +11,6 @@ data class Ticket(
     val dueDate: String = "",
     val internalNotes: String = "",
     val accountantName: String = "",
-    val clientId: String = ""
+    val clientId: String = "",
+    val createdLabel: String = ""
 )

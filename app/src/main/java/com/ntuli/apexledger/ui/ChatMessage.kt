@@ -5,5 +5,7 @@ data class ChatMessage(
     val messageBody: String = "",
     val isUrgent: Boolean = false,
     val readBy: List<String> = emptyList(),
-    val timeLabel: String = ""
+    val timeLabel: String = "",
+    val attachmentDocId: String = "",
+    val attachmentName: String = ""
 )

@@ -8,5 +8,6 @@ data class Document(
     val clientName: String = "",
     val version: Int = 1,
     val previousVersionIds: List<String> = emptyList(),
-    val dateLabel: String = ""
+    val dateLabel: String = "",
+    val accountantName: String = ""
 )

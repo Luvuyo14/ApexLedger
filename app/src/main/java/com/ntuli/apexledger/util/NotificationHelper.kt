@@ -10,12 +10,13 @@ import com.google.firebase.firestore.FirebaseFirestore
  * see it.
  */
 object NotificationHelper {
-    fun notify(recipientUid: String, type: String, title: String, body: String) {
+    fun notify(recipientUid: String, type: String, title: String, body: String, targetId: String = "") {
         val notification = hashMapOf(
             "recipientUid" to recipientUid,
             "type" to type,
             "title" to title,
             "body" to body,
+            "targetId" to targetId,
             "isRead" to false,
             "createdAt" to Timestamp.now()
         )

@@ -6,5 +6,6 @@ data class AppNotification(
     val title: String = "",
     val body: String = "",
     val isRead: Boolean = false,
-    val timestampLabel: String = ""
+    val timestampLabel: String = "",
+    val targetId: String = ""
 )

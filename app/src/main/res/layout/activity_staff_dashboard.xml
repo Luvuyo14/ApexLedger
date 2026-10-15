@@ -128,16 +128,36 @@
                             android:textSize="16sp"
                             android:background="@drawable/bg_avatar_circle" />
 
-                        <ImageView
-                            android:id="@+id/btnNotifications"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:gravity="center"
-                            android:src="@drawable/ic_bell"
-                            android:padding="9dp"
-                            android:background="@drawable/bg_circle_translucent"
-                            android:contentDescription="Notifications"
-                            android:layout_marginTop="10dp" />
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="10dp">
+
+                            <ImageView
+                                android:id="@+id/btnNotifications"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:layout_gravity="bottom|start"
+                                android:src="@drawable/ic_bell"
+                                android:padding="9dp"
+                                android:background="@drawable/bg_circle_translucent"
+                                android:contentDescription="Notifications" />
+
+                            <TextView
+                                android:id="@+id/tvBellBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="20dp"
+                                android:minWidth="20dp"
+                                android:layout_gravity="top|end"
+                                android:gravity="center"
+                                android:paddingHorizontal="5dp"
+                                android:text="0"
+                                android:textColor="#FFFFFF"
+                                android:textStyle="bold"
+                                android:textSize="10sp"
+                                android:background="@drawable/bg_badge_red"
+                                android:visibility="gone" />
+                        </FrameLayout>
                     </LinearLayout>
                 </LinearLayout>
                 <include

@@ -79,7 +79,7 @@ class ProfileActivity : AppCompatActivity() {
                         etPhone.setText(doc.getString("phone") ?: "")
                         etAddress.setText(doc.getString("address") ?: "")
                         tvTaxNumber.text = doc.getString("taxNumber") ?: "—"
-                        tvServicePref.text = Labels.service(doc.getString("servicePreference") ?: "")
+                        tvServicePref.text = (doc.getString("servicePreference") ?: "").ifEmpty { "Not chosen" }.let { if (it == "Not chosen") it else Labels.service(it) }
                     } else {
                         groupStaff.visibility = android.view.View.VISIBLE
                         tvRoleReadonly.text = Labels.title(role)

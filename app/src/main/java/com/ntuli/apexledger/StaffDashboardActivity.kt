@@ -36,9 +36,38 @@ class StaffDashboardActivity : AppCompatActivity() {
     private var isOrgWide = false
     private var staffRole = ""
 
+
+    private val notificationPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { }
+
+    private fun askNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        com.ntuli.apexledger.util.NotificationCenter.observe(this) { count ->
+            val badge = findViewById<TextView>(R.id.tvBellBadge)
+            badge.text = if (count > 9) "9+" else count.toString()
+            badge.visibility = if (count > 0) android.view.View.VISIBLE else android.view.View.GONE
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        com.ntuli.apexledger.util.NotificationCenter.stopObserving(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_staff_dashboard)
+        askNotificationPermission()
         com.ntuli.apexledger.util.PullRefresh.attach(this) { onResume() }
 
         auth = FirebaseAuth.getInstance()
@@ -205,6 +234,7 @@ class StaffDashboardActivity : AppCompatActivity() {
                         priority = d.getString("priority") ?: "medium",
                         description = d.getString("description") ?: "",
                         dueDate = d.getString("dueDate") ?: "",
+                        createdLabel = com.ntuli.apexledger.util.DateUtils.created(d.getTimestamp("createdDate")),
                         clientName = clientNames[d.getString("clientId")] ?: "Unknown client"
                     ) to (d.getTimestamp("createdDate")?.seconds ?: 0L)
                 }
@@ -334,82 +364,42 @@ class StaffDashboardActivity : AppCompatActivity() {
         unreadCount = 0
         setStat(R.id.statUnreadMessages, "Unread Messages", "0")
 
-        db.collection("users")
-            .whereEqualTo("assignedAccountantId", uid)
-            .get()
-            .addOnSuccessListener { clientsResult ->
-                val clientIds = clientsResult.documents.map { it.id }
-                val clientNames = clientsResult.documents.associate { it.id to (it.getString("full_name") ?: "") }
-                setStat(R.id.statMyClients, "My Clients", clientIds.size.toString())
+        // Tickets routed to this accountant (by service) plus older ones from assigned clients
+        com.ntuli.apexledger.util.StaffData.loadTickets(db, uid) { res ->
+            setStat(R.id.statMyClients, "My Clients", res.assignedClientIds.size.toString())
+            val open = res.docs.map { d ->
+                Ticket(
+                    ticketId = d.id,
+                    ticketNumber = d.getString("ticketNumber") ?: d.id,
+                    serviceType = d.getString("serviceType") ?: "general",
+                    status = d.getString("status") ?: "open",
+                    priority = d.getString("priority") ?: "medium",
+                    description = d.getString("description") ?: "",
+                    dueDate = d.getString("dueDate") ?: "",
+                    createdLabel = com.ntuli.apexledger.util.DateUtils.created(d.getTimestamp("createdDate")),
+                    clientName = res.clientNames[d.getString("clientId")] ?: ""
+                )
+            }.filter { it.status in listOf("open", "in_progress", "awaiting_documents", "under_review") }
+                .sortedByDescending { it.ticketNumber }
+            showTickets(open.take(5))
+            renderDueThisWeek(open)
+            setStat(R.id.statOpenTickets, "Open Tickets", open.size.toString())
+            setStat(R.id.statOverdue, "Overdue", open.count { DateUtils.isOverdue(it.dueDate, it.status) }.toString())
+        }
 
-                if (clientIds.isEmpty()) {
-                    showTickets(emptyList())
-                    renderDueThisWeek(emptyList())
-                    setStat(R.id.statOpenTickets, "Open Tickets", "0")
-                    setStat(R.id.statOverdue, "Overdue", "0")
-                    setStat(R.id.statUnreadMessages, "Unread Messages", "0")
-                    return@addOnSuccessListener
-                }
-
-                val batches = clientIds.chunked(10)
-                val allOpenTickets = mutableListOf<Ticket>()
-                var completedBatches = 0
-
-                for (batch in batches) {
-                    db.collection("tickets")
-                        .whereIn("clientId", batch)
-                        .whereIn("status", listOf("open", "in_progress", "awaiting_documents", "under_review"))
-                        .get()
-                        .addOnSuccessListener { result ->
-                            val tickets = result.documents.map { d ->
-                                Ticket(
-                                    ticketId = d.id,
-                                    ticketNumber = d.getString("ticketNumber") ?: d.id,
-                                    serviceType = d.getString("serviceType") ?: "general",
-                                    status = d.getString("status") ?: "open",
-                                    priority = d.getString("priority") ?: "medium",
-                                    description = d.getString("description") ?: "",
-                                    dueDate = d.getString("dueDate") ?: "",
-                                    clientName = clientNames[d.getString("clientId")] ?: ""
-                                )
-                            }
-                            allOpenTickets.addAll(tickets)
-                            completedBatches++
-                            if (completedBatches == batches.size) {
-                                showTickets(allOpenTickets.take(5))
-                                renderDueThisWeek(allOpenTickets)
-                                setStat(R.id.statOpenTickets, "Open Tickets", allOpenTickets.size.toString())
-
-                                val overdueCount = allOpenTickets.count { DateUtils.isOverdue(it.dueDate, it.status) }
-                                setStat(R.id.statOverdue, "Overdue", overdueCount.toString())
-                            }
-                        }
-
-                    db.collection("threads")
-                        .whereIn("clientId", batch)
-                        .get()
-                        .addOnSuccessListener { threadsResult ->
-                            for (threadDoc in threadsResult.documents) {
-                                db.collection("threads").document(threadDoc.id)
-                                    .collection("messages")
-                                    .orderBy("sentTimestamp", Query.Direction.DESCENDING)
-                                    .limit(1)
-                                    .get()
-                                    .addOnSuccessListener { lastMsgResult ->
-                                        val lastMsg = lastMsgResult.documents.firstOrNull()
-                                        if (lastMsg != null) {
-                                            val readBy = lastMsg.get("readBy") as? List<*> ?: emptyList<String>()
-                                            val senderId = lastMsg.getString("senderId") ?: ""
-                                            if (senderId != auth.currentUser?.uid && auth.currentUser?.uid !in readBy) {
-                                                unreadCount++
-                                                setStat(R.id.statUnreadMessages, "Unread Messages", unreadCount.toString())
-                                            }
-                                        }
-                                    }
-                            }
-                        }
-                }
+        com.ntuli.apexledger.util.StaffData.loadThreads(db, uid) { res ->
+            val threads = res.docs.map { d ->
+                com.ntuli.apexledger.ui.MessageThread(
+                    threadId = d.id,
+                    clientId = d.getString("clientId") ?: "",
+                    subject = d.getString("subject") ?: ""
+                )
             }
+            com.ntuli.apexledger.util.Unread.mark(db, uid, threads) { marked ->
+                unreadCount = marked.count { it.hasUnread }
+                setStat(R.id.statUnreadMessages, "Unread Messages", unreadCount.toString())
+            }
+        }
     }
 
     private fun setStat(includeId: Int, label: String, value: String) {

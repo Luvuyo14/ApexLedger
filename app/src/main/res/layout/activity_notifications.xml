@@ -54,6 +54,87 @@
         android:padding="32dp"
         android:visibility="gone" />
 
+    <LinearLayout
+        android:id="@+id/rowActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/btnSelectMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:padding="12dp" />
+
+        <TextView
+            android:id="@+id/btnMarkAllRead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mark all as read"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:padding="12dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/rowSelection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_pill_blue"
+        android:layout_marginHorizontal="16dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvSelectedCount"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="0 selected"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/btnSelectAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select all"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:padding="10dp" />
+
+        <TextView
+            android:id="@+id/btnDeleteSelected"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete"
+            android:textColor="@color/danger_dark"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:padding="10dp" />
+
+        <TextView
+            android:id="@+id/btnCancelSelect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:textColor="@color/gray_600"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:padding="10dp" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvNotifications"
         android:layout_width="match_parent"

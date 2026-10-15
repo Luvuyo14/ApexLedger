@@ -116,7 +116,9 @@ class TicketsActivity : AppCompatActivity() {
                         status = d.getString("status") ?: "open",
                         priority = d.getString("priority") ?: "medium",
                         description = d.getString("description") ?: "",
-                        dueDate = d.getString("dueDate") ?: ""
+                        dueDate = d.getString("dueDate") ?: "",
+                        createdLabel = com.ntuli.apexledger.util.DateUtils.created(d.getTimestamp("createdDate")),
+                        accountantName = d.getString("accountantName") ?: ""
                     )
                 }.sortedByDescending { it.ticketNumber }
                 applyFilters()
@@ -168,27 +170,49 @@ class TicketsActivity : AppCompatActivity() {
     private fun createTicket(serviceType: String, priority: String, description: String) {
         val uid = auth.currentUser?.uid ?: return
 
-        TicketNumbers.generate(db, serviceType) { ticketNumber ->
-            val ticketData = hashMapOf(
-                "clientId" to uid,
-                "ticketNumber" to ticketNumber,
-                "serviceType" to serviceType,
-                "priority" to priority,
-                "status" to "open",
-                "description" to description,
-                "dueDate" to "",
-                "createdDate" to com.google.firebase.Timestamp.now()
-            )
+        // Find the accountant who handles this service (the client's own one if they handle it)
+        com.ntuli.apexledger.util.AccountantRouter.pick(db, uid, serviceType, "tickets") { pick ->
+            TicketNumbers.generate(db, serviceType) { ticketNumber ->
+                val ticketData = hashMapOf(
+                    "clientId" to uid,
+                    "ticketNumber" to ticketNumber,
+                    "serviceType" to serviceType,
+                    "priority" to priority,
+                    "status" to "open",
+                    "description" to description,
+                    "dueDate" to "",
+                    "accountantId" to (pick?.id ?: ""),
+                    "accountantName" to (pick?.name ?: ""),
+                    "createdDate" to com.google.firebase.Timestamp.now()
+                )
 
-            db.collection("tickets").add(ticketData)
-                .addOnSuccessListener {
-                    com.ntuli.apexledger.util.Feedback.show(this, "Ticket $ticketNumber created!")
-                    AuditLogger.logEvent("Client", "Create Ticket", "$ticketNumber ($serviceType, $priority priority)")
-                    loadTickets()
-                }
-                .addOnFailureListener { e ->
-                    com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
-                }
+                db.collection("tickets").add(ticketData)
+                    .addOnSuccessListener { ticketRef ->
+                        val who = pick?.name
+                        com.ntuli.apexledger.util.Feedback.show(
+                            this,
+                            if (who != null) "Ticket $ticketNumber created and assigned to $who"
+                            else "Ticket $ticketNumber created. An administrator will assign an accountant."
+                        )
+                        AuditLogger.logEvent(
+                            "Client", "Create Ticket",
+                            "$ticketNumber (${Labels.service(serviceType)}, $priority priority" + (if (who != null) ", assigned to $who)" else ")")
+                        )
+                        if (pick != null) {
+                            com.ntuli.apexledger.util.NotificationHelper.notify(
+                                recipientUid = pick.id,
+                                type = "new_ticket",
+                                title = "New service request",
+                                body = "$ticketNumber - ${Labels.service(serviceType)}: ${description.take(60)}",
+                                targetId = ticketRef.id
+                            )
+                        }
+                        loadTickets()
+                    }
+                    .addOnFailureListener { e ->
+                        com.ntuli.apexledger.util.Feedback.show(this, "Failed: ${e.message}")
+                    }
+            }
         }
     }
 }

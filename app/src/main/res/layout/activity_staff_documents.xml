@@ -29,7 +29,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Client Documents"
+            android:text="Document Management"
             android:textColor="@color/on_primary"
             android:textStyle="bold"
             android:textSize="18sp" />
@@ -37,41 +37,161 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Review and approve the documents your clients upload"
+            android:text="Upload, review and track client financial documents"
             android:textColor="#CBD5E1"
             android:textSize="12sp"
             android:layout_marginTop="2dp" />
     </LinearLayout>
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp">
+        android:layout_height="match_parent">
 
-        <Spinner
-            android:id="@+id/spinnerFilterStatus"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_input_field" />
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-    </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_margin="6dp">
 
-    <TextView
-        android:id="@+id/tvEmptyState"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No documents to review right now. Pull down to refresh."
-        android:textColor="@color/gray_500"
-        android:textSize="14sp"
-        android:gravity="center"
-        android:padding="32dp"
-        android:visibility="gone" />
+                <TextView
+                    android:id="@+id/tvDocsTitle"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="All Documents"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvStaffDocuments"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp" />
+                <TextView
+                    android:id="@+id/btnToggleUpload"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+ Upload"
+                    android:textColor="@color/on_primary"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_button_primary_small"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="8dp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/cardStaffUpload"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_soft"
+                android:elevation="2dp"
+                android:padding="16dp"
+                android:layout_margin="6dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Upload Document"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Client"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+                <Spinner
+                    android:id="@+id/spinnerUploadClient"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_spinner"
+                    android:layout_marginBottom="12dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Category"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+                <Spinner
+                    android:id="@+id/spinnerUploadCategory"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_spinner"
+                    android:layout_marginBottom="12dp" />
+
+                <LinearLayout
+                    android:id="@+id/staffDropzone"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/bg_input_field"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:id="@+id/tvStaffDropTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tap to choose a file"
+                        android:textColor="@color/gray_600"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvStaffDropHint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PDF, JPG, PNG • max 10MB"
+                        android:textColor="@color/gray_500"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStaffUpload"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="Upload Securely"
+                    android:textColor="@color/on_primary"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/primary" />
+            </LinearLayout>
+
+            <Spinner
+                android:id="@+id/spinnerFilterStatus"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_spinner"
+                android:layout_margin="6dp" />
+
+            <TextView
+                android:id="@+id/tvEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="32dp"
+                android:text="No documents to review right now. Pull down to refresh."
+                android:textColor="@color/gray_500"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvStaffDocuments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

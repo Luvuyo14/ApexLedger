@@ -23,6 +23,16 @@
             android:textSize="14sp" />
 
         <TextView
+            android:id="@+id/tvAttachment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:paddingVertical="6dp"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/tvMessageTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

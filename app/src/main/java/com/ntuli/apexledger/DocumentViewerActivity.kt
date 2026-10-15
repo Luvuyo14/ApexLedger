@@ -74,6 +74,11 @@ class DocumentViewerActivity : AppCompatActivity() {
                 findViewById<TextView>(R.id.tvUploaded).text = d.getTimestamp("uploadTimestamp")?.toDate()
                     ?.let { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(it) } ?: "-"
 
+                val accName = d.getString("accountantName") ?: ""
+                findViewById<TextView>(R.id.tvAssignedTo).text =
+                    if (accName.isNotEmpty()) "$accName (${Labels.service(d.getString("documentCategory") ?: "other")})"
+                    else "Not assigned yet"
+
                 val clientId = d.getString("clientId") ?: ""
                 db.collection("users").document(clientId).get().addOnSuccessListener { u ->
                     findViewById<TextView>(R.id.tvClient).text = u.getString("full_name") ?: "-"
