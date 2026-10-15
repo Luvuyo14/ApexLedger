@@ -15,6 +15,29 @@
         app:navigationIcon="@drawable/ic_back_arrow"
         app:title="Conversation" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:background="@color/white"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Encrypted"
+            android:drawableStart="@drawable/ic_lock_small"
+            android:drawablePadding="4dp"
+            android:textColor="@color/success_dark"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:background="@drawable/badge_status_completed"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMessages"
         android:layout_width="match_parent"

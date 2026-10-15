@@ -36,10 +36,10 @@ class PermissionAdapter(private val items: List<PermissionRow>) :
     private fun setMark(view: TextView, allowed: Boolean) {
         if (allowed) {
             view.text = "✓"
-            view.setBackgroundResource(R.drawable.badge_status_completed)
+            view.setBackgroundResource(R.drawable.bg_mark_yes)
         } else {
             view.text = "✕"
-            view.setBackgroundResource(R.drawable.badge_status_overdue)
+            view.setBackgroundResource(R.drawable.bg_mark_no)
         }
     }
 

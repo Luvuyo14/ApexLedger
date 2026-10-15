@@ -19,6 +19,7 @@ class StaffDocumentAdapter(
         val tvClient: TextView = view.findViewById(R.id.tvClientName)
         val tvMeta: TextView = view.findViewById(R.id.tvDocMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvDocStatus)
+        val tvFileType: TextView = view.findViewById(R.id.tvFileType)
         val reviewActionsRow: View = view.findViewById(R.id.reviewActionsRow)
         val btnApprove: MaterialButton = view.findViewById(R.id.btnApprove)
         val btnReject: MaterialButton = view.findViewById(R.id.btnReject)
@@ -33,9 +34,21 @@ class StaffDocumentAdapter(
     override fun onBindViewHolder(holder: StaffDocViewHolder, position: Int) {
         val doc = items[position]
         holder.tvName.text = doc.fileName
+        holder.itemView.setOnClickListener {
+            val ctx = holder.itemView.context
+            ctx.startActivity(
+                android.content.Intent(ctx, com.ntuli.apexledger.DocumentViewerActivity::class.java)
+                    .putExtra("docId", doc.documentId)
+            )
+        }
+        com.ntuli.apexledger.util.FileTypes.apply(holder.tvFileType, doc.fileName)
         holder.tvClient.text = doc.clientName.ifEmpty { "Unknown client" }
-        holder.tvMeta.text = doc.documentCategory.replace("_", " ").replaceFirstChar { it.uppercase() }
-        holder.tvStatus.text = doc.reviewStatus.replace("_", " ").replaceFirstChar { it.uppercase() }
+        holder.tvMeta.text = listOf(
+            com.ntuli.apexledger.util.Labels.service(doc.documentCategory),
+            doc.dateLabel,
+            "v${doc.version}"
+        ).filter { it.isNotEmpty() }.joinToString(" • ")
+        holder.tvStatus.text = com.ntuli.apexledger.util.Labels.status(doc.reviewStatus)
 
         val badgeRes = when (doc.reviewStatus) {
             "approved" -> R.drawable.badge_status_completed

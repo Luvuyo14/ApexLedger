@@ -6,6 +6,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.ntuli.apexledger.R
+import com.ntuli.apexledger.util.Badges
+import com.ntuli.apexledger.util.DateUtils
+import com.ntuli.apexledger.util.Labels
 
 class TicketAdapter(private var items: List<Ticket>) :
     RecyclerView.Adapter<TicketAdapter.TicketViewHolder>() {
@@ -15,6 +18,9 @@ class TicketAdapter(private var items: List<Ticket>) :
         val tvService: TextView = view.findViewById(R.id.tvTicketService)
         val tvMeta: TextView = view.findViewById(R.id.tvTicketMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvStatusBadge)
+        val tvPriority: TextView = view.findViewById(R.id.tvPriorityBadge)
+        val tvDue: TextView = view.findViewById(R.id.tvDueText)
+        val tvOverdue: TextView = view.findViewById(R.id.tvOverdueChip)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TicketViewHolder {
@@ -26,23 +32,20 @@ class TicketAdapter(private var items: List<Ticket>) :
     override fun onBindViewHolder(holder: TicketViewHolder, position: Int) {
         val ticket = items[position]
         holder.tvNumber.text = ticket.ticketNumber
-        holder.tvService.text = ticket.serviceType.replace("_", " ").replaceFirstChar { it.uppercase() }
+        holder.tvService.text = Labels.service(ticket.serviceType)
 
-        val metaParts = mutableListOf<String>()
-        if (ticket.clientName.isNotEmpty()) metaParts.add(ticket.clientName)
-        if (ticket.dueDate.isNotEmpty()) metaParts.add("Due ${ticket.dueDate}")
-        holder.tvMeta.text = metaParts.joinToString(" • ")
-        holder.tvMeta.visibility = if (metaParts.isEmpty()) View.GONE else View.VISIBLE
+        holder.tvMeta.text = ticket.clientName
+        holder.tvMeta.visibility = if (ticket.clientName.isEmpty()) View.GONE else View.VISIBLE
 
-        holder.tvStatus.text = ticket.status.replace("_", " ").replaceFirstChar { it.uppercase() }
+        holder.tvStatus.text = Labels.status(ticket.status)
+        holder.tvStatus.setBackgroundResource(Badges.status(ticket.status))
 
-        val badgeRes = when (ticket.status) {
-            "completed" -> R.drawable.badge_status_completed
-            "in_progress", "awaiting_documents", "under_review" -> R.drawable.badge_status_pending
-            "cancelled" -> R.drawable.badge_status_overdue
-            else -> R.drawable.badge_status_open
-        }
-        holder.tvStatus.setBackgroundResource(badgeRes)
+        holder.tvPriority.text = Labels.priority(ticket.priority)
+        holder.tvPriority.setBackgroundResource(Badges.priority(ticket.priority))
+
+        holder.tvDue.text = if (ticket.dueDate.isNotEmpty()) DateUtils.display(ticket.dueDate) else "No due date"
+        holder.tvOverdue.visibility =
+            if (DateUtils.isOverdue(ticket.dueDate, ticket.status)) View.VISIBLE else View.GONE
     }
 
     override fun getItemCount() = items.size

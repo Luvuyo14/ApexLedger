@@ -6,15 +6,31 @@
     android:gravity="start"
     android:paddingVertical="4dp">
 
-    <TextView
-        android:id="@+id/tvMessageBody"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_marginEnd="60dp"
         android:background="@drawable/bg_bubble_received"
-        android:padding="12dp"
-        android:text="Message text"
-        android:textColor="@color/navy"
-        android:textSize="14sp" />
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvMessageBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Message text"
+            android:textColor="@color/navy"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvMessageTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="03 Sep 22:40"
+            android:textColor="#64748B"
+            android:textSize="10sp"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

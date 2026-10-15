@@ -1,31 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/gray_50"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:background="@color/gray_50">
 
-    <LinearLayout
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/white"
+        app:titleTextColor="@color/navy"
+        app:navigationIcon="@drawable/ic_back_arrow"
+        app:title="Reports" />
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/white"
-            app:titleTextColor="@color/navy"
-            app:navigationIcon="@drawable/ic_back_arrow"
-            app:title="Manager Reports" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_banner_gradient"
+                android:padding="18dp"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Manager Reports"
+                    android:textColor="@color/on_primary"
+                    android:textStyle="bold"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/tvReportDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Workload, performance and compliance overview"
+                    android:textColor="#CBD5E1"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="14dp">
+
+                        <TextView
+                            android:id="@+id/btnExportCsv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Export CSV"
+                            android:textColor="@color/on_primary"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:background="@drawable/bg_pill_translucent"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="8dp"
+                            android:layout_marginEnd="8dp" />
+                        <TextView
+                            android:id="@+id/btnPrintReport"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Print / PDF"
+                            android:textColor="@color/on_primary"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:background="@drawable/bg_pill_translucent"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="8dp"
+                            android:layout_marginEnd="8dp" />
+                </LinearLayout>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_soft"
+                android:elevation="2dp"
+                android:padding="16dp"
+                android:layout_margin="6dp"
+                android:id="@+id/cardOverdue">
+                <TextView
+                    android:id="@+id/tvOverdueTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Overdue Tickets"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvOverdueSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp"
+                    android:layout_marginTop="2dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvOverdueTickets"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -34,7 +123,6 @@
                 <include layout="@layout/item_stat_card" android:id="@+id/statTotalTickets" />
                 <include layout="@layout/item_stat_card" android:id="@+id/statCompletionRate" />
             </LinearLayout>
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -43,96 +131,97 @@
                 <include layout="@layout/item_stat_card" android:id="@+id/statOpenTickets" />
                 <include layout="@layout/item_stat_card" android:id="@+id/statOverdueTickets" />
             </LinearLayout>
-
-            <!-- Ticket Completion breakdown -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/bg_card_stroke"
+                android:background="@drawable/bg_card_soft"
+                android:elevation="2dp"
                 android:padding="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp">
-
+                android:layout_margin="6dp">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Ticket Completion"
                     android:textColor="@color/navy"
                     android:textStyle="bold"
-                    android:textSize="15sp"
-                    android:layout_marginBottom="10dp" />
+                    android:textSize="16sp"
+                    android:layout_marginBottom="8dp" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <com.ntuli.apexledger.ui.DonutChartView
+                        android:id="@+id/donutTicketCompletion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal" />
+                </FrameLayout>
 
                 <LinearLayout
                     android:id="@+id/containerTicketCompletion"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp" />
             </LinearLayout>
-
-            <!-- Workload by Accountant -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/bg_card_stroke"
+                android:background="@drawable/bg_card_soft"
+                android:elevation="2dp"
                 android:padding="16dp"
-                android:layout_marginBottom="16dp">
-
+                android:layout_margin="6dp">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Workload by Accountant"
                     android:textColor="@color/navy"
                     android:textStyle="bold"
-                    android:textSize="15sp"
-                    android:layout_marginBottom="10dp" />
+                    android:textSize="16sp"
+                    android:layout_marginBottom="8dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+                    <View android:layout_width="10dp" android:layout_height="10dp" android:background="@color/warning" android:layout_gravity="center_vertical" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Open" android:textColor="@color/gray_600" android:textSize="12sp" android:layout_marginStart="6dp" android:layout_marginEnd="16dp" />
+                    <View android:layout_width="10dp" android:layout_height="10dp" android:background="@color/success" android:layout_gravity="center_vertical" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Completed" android:textColor="@color/gray_600" android:textSize="12sp" android:layout_marginStart="6dp" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/containerWorkload"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-
             </LinearLayout>
-
-            <!-- Overdue Tickets -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/bg_card_stroke"
-                android:padding="16dp">
-
+                android:background="@drawable/bg_card_soft"
+                android:elevation="2dp"
+                android:padding="16dp"
+                android:layout_margin="6dp">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Overdue Tickets"
+                    android:text="Security Snapshot"
                     android:textColor="@color/navy"
                     android:textStyle="bold"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:layout_marginBottom="8dp" />
-
                 <TextView
-                    android:id="@+id/tvOverdueEmptyState"
+                    android:id="@+id/tvSecuritySnapshot"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="No overdue tickets"
-                    android:textColor="@color/gray_500"
-                    android:textSize="13sp"
-                    android:gravity="center"
-                    android:padding="20dp"
-                    android:visibility="gone" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvOverdueTickets"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false" />
-
+                    android:text="Failed login attempts in the last 30 days: 0. Full event-level detail is available to Admins under Admin Panel → Audit Log."
+                    android:textColor="@color/gray_600"
+                    android:textSize="13sp" />
             </LinearLayout>
 
         </LinearLayout>
-    </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</LinearLayout>

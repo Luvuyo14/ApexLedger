@@ -17,6 +17,8 @@ class StaffThreadAdapter(
         val tvClient: TextView = view.findViewById(R.id.tvClientName)
         val tvPreview: TextView = view.findViewById(R.id.tvThreadPreview)
         val tvUrgent: TextView = view.findViewById(R.id.tvUrgentPill)
+        val tvAvatar: TextView = view.findViewById(R.id.tvThreadAvatar)
+        val tvUnread: TextView = view.findViewById(R.id.tvUnreadBadge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StaffThreadViewHolder {
@@ -28,9 +30,12 @@ class StaffThreadAdapter(
     override fun onBindViewHolder(holder: StaffThreadViewHolder, position: Int) {
         val thread = items[position]
         holder.tvSubject.text = thread.subject
-        holder.tvClient.text = "with ${thread.clientName.ifEmpty { "Unknown client" }}"
+        holder.tvClient.text = thread.clientName.ifEmpty { "Unknown client" }
         holder.tvPreview.text = thread.lastMessagePreview
         holder.tvUrgent.visibility = if (thread.isUrgent) View.VISIBLE else View.GONE
+        holder.tvAvatar.text = com.ntuli.apexledger.util.StatCards.initials(thread.clientName.ifEmpty { thread.subject })
+        holder.tvUnread.visibility = if (thread.hasUnread) View.VISIBLE else View.GONE
+        holder.tvPreview.setTypeface(null, if (thread.hasUnread) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         holder.itemView.setOnClickListener { onClick(thread) }
     }
 

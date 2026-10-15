@@ -8,5 +8,8 @@ data class Ticket(
     val priority: String = "medium",
     val description: String = "",
     val clientName: String = "",
-    val dueDate: String = ""
+    val dueDate: String = "",
+    val internalNotes: String = "",
+    val accountantName: String = "",
+    val clientId: String = ""
 )

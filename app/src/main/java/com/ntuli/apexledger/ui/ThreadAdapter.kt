@@ -16,6 +16,8 @@ class ThreadAdapter(
         val tvSubject: TextView = view.findViewById(R.id.tvThreadSubject)
         val tvPreview: TextView = view.findViewById(R.id.tvThreadPreview)
         val tvUrgent: TextView = view.findViewById(R.id.tvUrgentPill)
+        val tvAvatar: TextView = view.findViewById(R.id.tvThreadAvatar)
+        val tvUnread: TextView = view.findViewById(R.id.tvUnreadBadge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ThreadViewHolder {
@@ -29,6 +31,9 @@ class ThreadAdapter(
         holder.tvSubject.text = thread.subject
         holder.tvPreview.text = thread.lastMessagePreview
         holder.tvUrgent.visibility = if (thread.isUrgent) View.VISIBLE else View.GONE
+        holder.tvAvatar.text = com.ntuli.apexledger.util.StatCards.initials(thread.subject)
+        holder.tvUnread.visibility = if (thread.hasUnread) View.VISIBLE else View.GONE
+        holder.tvPreview.setTypeface(null, if (thread.hasUnread) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         holder.itemView.setOnClickListener { onClick(thread) }
     }
 

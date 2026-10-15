@@ -20,6 +20,36 @@
             app:navigationIcon="@drawable/ic_back_arrow"
             app:title="My Profile" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_banner_gradient"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="14dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:id="@+id/tvBannerTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="My Profile"
+            android:textColor="@color/on_primary"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvBannerSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Manage your account information and preferences"
+            android:textColor="#CBD5E1"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -49,7 +79,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="?"
-                        android:textColor="@color/white"
+                        android:textColor="@color/on_primary"
                         android:textStyle="bold"
                         android:textSize="22sp" />
                 </LinearLayout>
@@ -99,6 +129,140 @@
                     android:textColor="@color/gray_500"
                     android:textSize="14sp"
                     android:layout_marginTop="4dp" />
+
+                <LinearLayout
+                    android:id="@+id/groupClientFields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Phone"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="12dp" />
+                <EditText
+                    android:id="@+id/etPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textSize="14sp"
+                    android:inputType="phone"
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tax Number"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="12dp" />
+                <TextView
+                    android:id="@+id/tvTaxNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/gray_500"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Address"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="12dp" />
+                <EditText
+                    android:id="@+id/etAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textSize="14sp"
+                    android:inputType="textMultiLine" android:gravity="top" android:minLines="2"
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Service Preference"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="12dp" />
+                <TextView
+                    android:id="@+id/tvServicePref"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/gray_500"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/groupStaffFields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Role"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="12dp" />
+                <TextView
+                    android:id="@+id/tvRoleReadonly"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/gray_500"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Department"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp"
+                    android:layout_marginTop="12dp" />
+                <TextView
+                    android:id="@+id/tvDepartmentReadonly"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/gray_500"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" />
+                </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSavePersonal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Save Changes"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/success"
+                    android:textColor="@color/on_primary"
+                    android:layout_gravity="start"
+                    android:layout_marginTop="16dp" />
 
             </LinearLayout>
 
@@ -222,6 +386,44 @@
                     android:backgroundTint="@color/primary"
                     android:layout_marginTop="16dp" />
 
+            </LinearLayout>
+
+            <!-- Appearance card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_card_stroke"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Dark mode"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Easier on the eyes in low light"
+                        android:textColor="@color/gray_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchDarkMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
             </LinearLayout>
 
             <!-- Change password card -->

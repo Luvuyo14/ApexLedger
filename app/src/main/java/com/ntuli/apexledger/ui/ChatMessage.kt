@@ -4,5 +4,6 @@ data class ChatMessage(
     val senderId: String = "",
     val messageBody: String = "",
     val isUrgent: Boolean = false,
-    val readBy: List<String> = emptyList()
+    val readBy: List<String> = emptyList(),
+    val timeLabel: String = ""
 )

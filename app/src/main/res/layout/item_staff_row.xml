@@ -11,11 +11,23 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <TextView
+            android:id="@+id/tvStaffAvatar"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:gravity="center"
+            android:text="--"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:background="@drawable/bg_avatar_light" />
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
 
             <TextView
                 android:id="@+id/tvStaffName"
@@ -34,6 +46,15 @@
                 android:textColor="@color/gray_500"
                 android:textSize="12sp"
                 android:layout_marginTop="2dp" />
+
+            <TextView
+                android:id="@+id/tvStaffDepartment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Department"
+                android:textColor="@color/gray_600"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
 
         <TextView
@@ -44,10 +65,51 @@
             android:textSize="11sp"
             android:textStyle="bold"
             android:textColor="@color/primary"
-            android:background="@color/primary_light"
+            android:background="@drawable/bg_pill_blue"
             android:paddingHorizontal="10dp"
             android:paddingVertical="4dp" />
 
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/tvStaffStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Active"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/success_dark"
+            android:background="@drawable/badge_status_completed"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp" />
+
+        <TextView
+            android:id="@+id/tvStaffClients"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="@color/gray_500"
+            android:textSize="12sp"
+            android:layout_marginStart="10dp" />
+
+        <TextView
+            android:id="@+id/btnToggleActive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Deactivate"
+            android:textColor="@color/navy_700"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:background="@drawable/bg_input_field"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp" />
     </LinearLayout>
 
     <View

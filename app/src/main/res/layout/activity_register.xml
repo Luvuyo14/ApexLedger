@@ -20,19 +20,31 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="20dp">
 
-            <View
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/bg_brand_icon" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_logo"
+                android:background="@drawable/bg_brand_icon"
+                android:clipToOutline="true"
+                android:contentDescription="APEXLedger logo"
+                android:scaleType="centerCrop" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="APEXLedger"
+                android:text="APEX"
                 android:textColor="@color/navy"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:layout_marginStart="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ledger"
+                android:textColor="@color/primary"
+                android:textStyle="bold"
+                android:textSize="18sp" />
         </LinearLayout>
 
         <androidx.cardview.widget.CardView
@@ -59,7 +71,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Register with Ntuli Accountants and Associates for secure financial services."
+                    android:text="Register with Ntuli Accountants and Associates for secure financial services. Fields marked with * are required."
                     android:textColor="@color/gray_500"
                     android:textSize="12sp"
                     android:layout_marginTop="4dp"
@@ -126,6 +138,28 @@
                     android:layout_marginBottom="10dp"
                     android:visibility="gone" />
 
+                <TextView android:text="Tax Number (10 digits) *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <EditText
+                    android:id="@+id/etTaxNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_input_field"
+                    android:paddingStart="14dp" android:paddingEnd="14dp"
+                    android:inputType="number"
+                    android:maxLength="10"
+                    android:hint="e.g. 1234567890"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorTaxNumber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
+
                 <TextView android:text="Service Preference *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <Spinner
                     android:id="@+id/spinnerServicePreference"
@@ -139,7 +173,15 @@
                     android:text="This assigns you directly to the accountant who handles that duty."
                     android:textColor="@color/gray_400"
                     android:textSize="10sp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="4dp" />
+                <TextView
+                    android:id="@+id/tvErrorService"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/danger_dark"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
 
                 <TextView android:text="Physical Address *" android:textColor="@color/navy_700" android:textStyle="bold" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 <EditText
@@ -204,15 +246,34 @@
                     android:layout_marginBottom="14dp"
                     android:visibility="gone" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRegisterClient"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:text="Register Client"
-                    android:textAllCaps="false"
-                    android:textStyle="bold"
-                    android:backgroundTint="@color/primary"
-                    android:layout_marginBottom="14dp" />
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="14dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCancelRegister"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="52dp"
+                        android:text="Cancel"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRegisterClient"
+                        android:layout_width="0dp"
+                        android:layout_weight="1.4"
+                        android:layout_height="52dp"
+                        android:text="Register Client"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:backgroundTint="@color/primary"
+                        android:layout_marginStart="6dp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvStatus"

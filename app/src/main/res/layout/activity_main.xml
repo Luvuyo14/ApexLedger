@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/navy"
+    android:background="@drawable/bg_login_gradient"
     android:fillViewport="true">
 
     <LinearLayout
@@ -21,19 +21,31 @@
             android:layout_marginTop="48dp"
             android:layout_marginBottom="8dp">
 
-            <View
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/bg_brand_icon" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_logo"
+                android:background="@drawable/bg_brand_icon"
+                android:clipToOutline="true"
+                android:contentDescription="APEXLedger logo"
+                android:scaleType="centerCrop" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="APEXLedger"
-                android:textColor="@color/white"
+                android:text="APEX"
+                android:textColor="@color/on_primary"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:layout_marginStart="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ledger"
+                android:textColor="#60A5FA"
+                android:textStyle="bold"
+                android:textSize="18sp" />
         </LinearLayout>
 
         <androidx.cardview.widget.CardView
@@ -51,11 +63,15 @@
                 android:gravity="center_horizontal"
                 android:padding="24dp">
 
-                <View
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_brand_icon"
-                    android:layout_marginBottom="12dp" />
+                <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@drawable/ic_logo"
+                android:background="@drawable/bg_brand_icon"
+                android:clipToOutline="true"
+                android:contentDescription="APEXLedger logo"
+                android:scaleType="centerCrop"
+                android:layout_marginBottom="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -144,7 +160,7 @@
                         android:textAllCaps="false"
                         android:textStyle="bold"
                         android:backgroundTint="@color/primary"
-                        android:textColor="@color/white"
+                        android:textColor="@color/on_primary"
                         android:layout_marginTop="18dp"
                         android:layout_marginBottom="8dp" />
 
@@ -157,6 +173,15 @@
                         android:visibility="gone" />
 
                     <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="5 failed attempts will temporarily lock this account for 15 minutes."
+                        android:textColor="@color/gray_400"
+                        android:textSize="11sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView
                         android:id="@+id/tvForgotPassword"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -167,14 +192,29 @@
                         android:textSize="12sp"
                         android:layout_marginBottom="14dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnRegister"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:text="Create an Account"
-                        android:textAllCaps="false"
-                        android:textStyle="bold" />
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="New client? "
+                            android:textColor="@color/navy_700"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/btnRegister"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Create an account"
+                            android:textColor="@color/primary"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:padding="4dp" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvStatus"

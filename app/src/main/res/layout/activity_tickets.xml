@@ -19,6 +19,34 @@
             app:navigationIcon="@drawable/ic_back_arrow"
             app:title="Service Tickets" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_banner_gradient"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="14dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="My Tickets"
+            android:textColor="@color/on_primary"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Track tax returns, payroll, advisory and audit work"
+            android:textColor="#CBD5E1"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -34,15 +62,49 @@
                 android:textAllCaps="false"
                 android:textStyle="bold"
                 android:backgroundTint="@color/success"
-                android:textColor="@color/white" />
+                android:textColor="@color/on_primary" />
 
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
+
+            <Spinner
+                android:id="@+id/spinnerFilterStatus"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_input_field"
+                android:layout_marginEnd="6dp" />
+
+            <Spinner
+                android:id="@+id/spinnerFilterPriority"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_input_field"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTicketCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:text="0 ticket(s)"
+            android:textColor="@color/gray_500"
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/tvEmptyState"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No tickets yet"
+            android:text="No tickets found. Tap + Request a Service to create one."
             android:textColor="@color/gray_500"
             android:textSize="14sp"
             android:gravity="center"

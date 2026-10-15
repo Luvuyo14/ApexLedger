@@ -23,6 +23,7 @@ class MessageAdapter(
 
     class BubbleViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvBody: TextView = view.findViewById(R.id.tvMessageBody)
+        val tvTime: TextView = view.findViewById(R.id.tvMessageTime)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -33,7 +34,10 @@ class MessageAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = items[position]
-        (holder as BubbleViewHolder).tvBody.text = message.messageBody
+        val h = holder as BubbleViewHolder
+        h.tvBody.text = message.messageBody
+        h.tvTime.text = message.timeLabel
+        h.tvTime.visibility = if (message.timeLabel.isEmpty()) View.GONE else View.VISIBLE
     }
 
     override fun getItemCount() = items.size

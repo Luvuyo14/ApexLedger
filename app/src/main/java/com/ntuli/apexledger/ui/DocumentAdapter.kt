@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.ntuli.apexledger.R
+import com.ntuli.apexledger.util.Labels
 
 class DocumentAdapter(private var items: List<Document>) :
     RecyclerView.Adapter<DocumentAdapter.DocViewHolder>() {
@@ -15,6 +16,7 @@ class DocumentAdapter(private var items: List<Document>) :
         val tvVersion: TextView = view.findViewById(R.id.tvVersionBadge)
         val tvMeta: TextView = view.findViewById(R.id.tvDocMeta)
         val tvStatus: TextView = view.findViewById(R.id.tvDocStatus)
+        val tvFileType: TextView = view.findViewById(R.id.tvFileType)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DocViewHolder {
@@ -26,9 +28,17 @@ class DocumentAdapter(private var items: List<Document>) :
     override fun onBindViewHolder(holder: DocViewHolder, position: Int) {
         val doc = items[position]
         holder.tvName.text = doc.fileName
+        holder.itemView.setOnClickListener {
+            val ctx = holder.itemView.context
+            ctx.startActivity(
+                android.content.Intent(ctx, com.ntuli.apexledger.DocumentViewerActivity::class.java)
+                    .putExtra("docId", doc.documentId)
+            )
+        }
+        com.ntuli.apexledger.util.FileTypes.apply(holder.tvFileType, doc.fileName)
         holder.tvVersion.text = "v${doc.version}"
-        holder.tvMeta.text = doc.documentCategory.replace("_", " ").replaceFirstChar { it.uppercase() }
-        holder.tvStatus.text = doc.reviewStatus.replace("_", " ").replaceFirstChar { it.uppercase() }
+        holder.tvMeta.text = listOf(Labels.service(doc.documentCategory), doc.dateLabel).filter { it.isNotEmpty() }.joinToString(" • ")
+        holder.tvStatus.text = Labels.status(doc.reviewStatus)
 
         val badgeRes = when (doc.reviewStatus) {
             "approved" -> R.drawable.badge_status_completed

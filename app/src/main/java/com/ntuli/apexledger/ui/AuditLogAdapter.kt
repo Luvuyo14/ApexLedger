@@ -29,6 +29,19 @@ class AuditLogAdapter(private var items: List<AuditLogEntry>) :
         holder.tvAction.text = entry.action
         holder.tvTimestamp.text = entry.timestampLabel
         holder.tvDetails.text = entry.details.ifEmpty { "—" }
+
+        val failed = entry.action == "Failed Login"
+        val ctx = holder.itemView.context
+        holder.tvAction.setTextColor(
+            androidx.core.content.ContextCompat.getColor(ctx, if (failed) R.color.danger_dark else R.color.navy)
+        )
+        if (failed) {
+            holder.tvUserType.setBackgroundResource(R.drawable.badge_status_overdue)
+            holder.tvUserType.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.danger_dark))
+        } else {
+            holder.tvUserType.setBackgroundResource(R.drawable.bg_pill_blue)
+            holder.tvUserType.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.primary))
+        }
     }
 
     override fun getItemCount() = items.size

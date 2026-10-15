@@ -18,6 +18,34 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_banner_gradient"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="14dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Client Documents"
+            android:textColor="@color/on_primary"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Review and approve the documents your clients upload"
+            android:textColor="#CBD5E1"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="12dp">
 
@@ -33,7 +61,7 @@
         android:id="@+id/tvEmptyState"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No documents match this filter"
+        android:text="No documents to review right now. Pull down to refresh."
         android:textColor="@color/gray_500"
         android:textSize="14sp"
         android:gravity="center"

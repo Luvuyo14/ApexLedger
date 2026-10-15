@@ -17,27 +17,41 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/white"
             app:titleTextColor="@color/navy"
-            app:title="Dashboard" />
+            app:title="">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end"
-            android:background="@color/white"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="8dp">
-
-            <TextView
-                android:id="@+id/btnNotifications"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔔 Notifications"
-                android:textColor="@color/primary"
-                android:textStyle="bold"
-                android:textSize="12sp" />
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-        </LinearLayout>
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@drawable/ic_logo"
+                    android:background="@drawable/bg_brand_icon"
+                    android:clipToOutline="true"
+                    android:contentDescription="APEXLedger logo"
+                    android:scaleType="centerCrop" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="APEX"
+                    android:textColor="@color/navy"
+                    android:textStyle="bold"
+                    android:textSize="17sp"
+                    android:layout_marginStart="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ledger"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold"
+                    android:textSize="17sp" />
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
 
         <ScrollView
             android:layout_width="match_parent"
@@ -47,34 +61,230 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="12dp">
 
-                <TextView
-                    android:id="@+id/tvWelcome"
-                    android:layout_width="wrap_content"
+                <!-- Welcome banner -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Welcome"
-                    android:textColor="@color/navy"
-                    android:textStyle="bold"
-                    android:textSize="20sp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_banner_gradient"
+                    android:padding="18dp"
+                    android:layout_marginBottom="10dp">
 
-                <TextView
-                    android:id="@+id/tvDate"
-                    android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvWelcome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Welcome back"
+                            android:textColor="@color/on_primary"
+                            android:textStyle="bold"
+                            android:textSize="20sp" />
+
+                        <TextView
+                            android:id="@+id/tvDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#CBD5E1"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvRole"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Role"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/on_primary"
+                            android:background="@drawable/bg_pill_translucent"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:layout_marginTop="10dp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:id="@+id/tvAvatar"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:gravity="center"
+                            android:text="--"
+                            android:textColor="@color/on_primary"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:background="@drawable/bg_avatar_circle" />
+
+                        <ImageView
+                            android:id="@+id/btnNotifications"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:gravity="center"
+                            android:src="@drawable/ic_bell"
+                            android:padding="9dp"
+                            android:background="@drawable/bg_circle_translucent"
+                            android:contentDescription="Notifications"
+                            android:layout_marginTop="10dp" />
+                    </LinearLayout>
+                </LinearLayout>
+                <include
+                    layout="@layout/card_dash_section"
+                    android:id="@+id/cardActionNeeded"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/gray_500"
-                    android:textSize="12sp"
-                    android:layout_marginTop="2dp" />
+                    android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/tvRole"
-                    android:layout_width="wrap_content"
+                <!-- Assigned accountant -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/gray_500"
-                    android:textSize="13sp"
-                    android:layout_marginTop="2dp"
-                    android:layout_marginBottom="16dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_card_soft"
+                    android:elevation="2dp"
+                    android:padding="16dp"
+                    android:layout_margin="6dp">
 
+                    <TextView
+                        android:id="@+id/tvAccountantAvatar"
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:gravity="center"
+                        android:text="--"
+                        android:textColor="@color/primary"
+                        android:textStyle="bold"
+                        android:textSize="15sp"
+                        android:background="@drawable/bg_avatar_light" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="YOUR ACCOUNTANT"
+                            android:textColor="@color/gray_500"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvAccountantName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Not assigned yet"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvAccountantMeta"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/gray_500"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/qaRequest"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="6dp"
+                        android:padding="14dp"
+                        android:gravity="center_vertical"
+                        android:text="Request a Service"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:drawableStart="@drawable/ic_qa_add"
+                        android:drawableTint="@color/primary"
+                        android:drawablePadding="10dp"
+                        android:elevation="2dp"
+                        android:background="@drawable/bg_card_soft" />
+                    <TextView
+                        android:id="@+id/qaUpload"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="6dp"
+                        android:padding="14dp"
+                        android:gravity="center_vertical"
+                        android:text="Upload Document"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:drawableStart="@drawable/ic_qa_upload"
+                        android:drawableTint="@color/primary"
+                        android:drawablePadding="10dp"
+                        android:elevation="2dp"
+                        android:background="@drawable/bg_card_soft" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/qaMessage"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="6dp"
+                        android:padding="14dp"
+                        android:gravity="center_vertical"
+                        android:text="Message Accountant"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:drawableStart="@drawable/ic_qa_chat"
+                        android:drawableTint="@color/primary"
+                        android:drawablePadding="10dp"
+                        android:elevation="2dp"
+                        android:background="@drawable/bg_card_soft" />
+                    <TextView
+                        android:id="@+id/qaTickets"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="6dp"
+                        android:padding="14dp"
+                        android:gravity="center_vertical"
+                        android:text="My Tickets"
+                        android:textColor="@color/navy"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:drawableStart="@drawable/ic_stat_ticket"
+                        android:drawableTint="@color/primary"
+                        android:drawablePadding="10dp"
+                        android:elevation="2dp"
+                        android:background="@drawable/bg_card_soft" />
+                </LinearLayout>
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -83,7 +293,6 @@
                     <include layout="@layout/item_stat_card" android:id="@+id/statDocuments" />
                     <include layout="@layout/item_stat_card" android:id="@+id/statMessages" />
                 </LinearLayout>
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -93,29 +302,68 @@
                     <include layout="@layout/item_stat_card" android:id="@+id/statOverdue" />
                 </LinearLayout>
 
+                <include
+                    layout="@layout/card_dash_section"
+                    android:id="@+id/cardComingUp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:background="@drawable/bg_card_stroke"
+                    android:background="@drawable/bg_card_soft"
+                    android:elevation="2dp"
                     android:padding="16dp"
+                    android:layout_margin="6dp"
                     android:layout_marginTop="12dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Recent Service Tickets"
-                        android:textColor="@color/navy"
-                        android:textStyle="bold"
-                        android:textSize="15sp"
-                        android:layout_marginBottom="8dp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Recent Service Tickets"
+                            android:textColor="@color/navy"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/btnViewAllClient"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View All →"
+                            android:textColor="@color/on_primary"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:background="@drawable/bg_button_primary_small"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="8dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvNoTickets"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:padding="24dp"
+                        android:text="No tickets yet. Use Request a Service to get started."
+                        android:textColor="@color/gray_500"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvRecentTickets"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false" />
-
                 </LinearLayout>
 
             </LinearLayout>
@@ -128,6 +376,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/white"
+        app:headerLayout="@layout/nav_header"
+        app:itemTextColor="@color/nav_item_text"
+        app:itemBackground="@drawable/bg_nav_item"
+        app:itemIconTint="@null"
         app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

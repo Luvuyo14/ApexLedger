@@ -6,5 +6,6 @@ data class MessageThread(
     val subject: String = "",
     val lastMessagePreview: String = "",
     val isUrgent: Boolean = false,
-    val clientName: String = ""
+    val clientName: String = "",
+    val hasUnread: Boolean = false
 )

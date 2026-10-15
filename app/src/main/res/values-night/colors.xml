@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="white">#111827</color>
+    <color name="gray_50">#0B1220</color>
+    <color name="gray_100">#1F2937</color>
+    <color name="gray_200">#243041</color>
+    <color name="gray_300">#374151</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#94A3B8</color>
+    <color name="gray_600">#CBD5E1</color>
+    <color name="navy">#F1F5F9</color>
+    <color name="navy_700">#CBD5E1</color>
+    <color name="primary_light">#1E3A5F</color>
+    <color name="success_dark">#4ADE80</color>
+    <color name="danger_dark">#F87171</color>
+    <color name="card_stroke">#243041</color>
+    <color name="pill_purple_text">#C4B5FD</color>
+    <color name="pill_amber_text">#FCD34D</color>
+</resources>

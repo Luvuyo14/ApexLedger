@@ -7,5 +7,6 @@ data class Document(
     val reviewStatus: String = "pending",
     val clientName: String = "",
     val version: Int = 1,
-    val previousVersionIds: List<String> = emptyList()
+    val previousVersionIds: List<String> = emptyList(),
+    val dateLabel: String = ""
 )

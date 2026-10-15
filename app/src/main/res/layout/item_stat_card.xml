@@ -5,12 +5,14 @@
     android:layout_weight="1"
     android:layout_margin="6dp"
     android:orientation="horizontal"
-    android:background="@drawable/bg_card_stroke">
+    android:elevation="2dp"
+    android:background="@drawable/bg_card_soft">
 
     <View
         android:id="@+id/statAccentBar"
         android:layout_width="4dp"
         android:layout_height="match_parent"
+        android:visibility="gone"
         android:background="@color/primary" />
 
     <LinearLayout
@@ -36,8 +38,18 @@
             android:text="0"
             android:textColor="@color/navy"
             android:textStyle="bold"
-            android:textSize="24sp"
+            android:textSize="26sp"
             android:layout_marginTop="4dp" />
 
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/tvStatIcon"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:padding="8dp"
+        android:contentDescription="@null"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="12dp"
+        android:visibility="gone" />
 </LinearLayout>
