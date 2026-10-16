@@ -184,12 +184,46 @@ class StaffTicketsActivity : AppCompatActivity() {
             this,
             { _, year, month, dayOfMonth ->
                 val formatted = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                updateTicketDueDate(ticket, formatted)
+                checkDueDate(ticket, formatted, year, month + 1)
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         ).show()
+    }
+
+    /**
+     * Asks the Nager.Date public-holiday API whether the chosen day is a weekend or a South African
+     * public holiday, and offers the next working day if it is.
+     */
+    private fun checkDueDate(ticket: Ticket, date: String, year: Int, month: Int) {
+        // a date in December may be pushed into next year, so load both years
+        val years = if (month == 12) listOf(year, year + 1) else listOf(year)
+
+        com.ntuli.apexledger.util.HolidayApi.forYears(this, years) { holidays, error ->
+            if (holidays == null) {
+                // offline or the service is down: save the date anyway and say that the check was skipped
+                com.ntuli.apexledger.util.Feedback.show(this, "Public holiday check skipped ($error). Date saved.")
+                updateTicketDueDate(ticket, date)
+                return@forYears
+            }
+
+            val check = com.ntuli.apexledger.util.WorkingDays.check(date, holidays)
+            if (check == null || !check.isProblem) {
+                updateTicketDueDate(ticket, date)
+                return@forYears
+            }
+
+            val shown = com.ntuli.apexledger.util.DateUtils.display(date)
+            val suggested = com.ntuli.apexledger.util.DateUtils.display(check.suggestedDate)
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Due date warning")
+                .setMessage("$shown is ${check.reason}.\n\nThe next working day is $suggested.")
+                .setPositiveButton("Use $suggested") { _, _ -> updateTicketDueDate(ticket, check.suggestedDate) }
+                .setNeutralButton("Keep $shown") { _, _ -> updateTicketDueDate(ticket, date) }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
 
     private fun updateTicketDueDate(ticket: Ticket, dueDate: String) {
