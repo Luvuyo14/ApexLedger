@@ -241,6 +241,7 @@ class DashboardActivity : AppCompatActivity() {
         super.onResume()
         // coming back from Documents (or anywhere) re-checks what is still outstanding
         renderActionNeeded()
+        com.ntuli.apexledger.util.HolidayCard.show(this, findViewById(R.id.cardHolidays))
     }
 
     /** Shows the accountant assigned to this client (name, duty, email). */
