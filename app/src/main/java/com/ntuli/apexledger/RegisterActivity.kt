@@ -22,7 +22,7 @@ class RegisterActivity : AppCompatActivity() {
     private val servicePreferences = listOf("tax_return", "payroll", "bookkeeping", "advisory", "audit")
 
     // Min 8 chars, at least 1 uppercase letter, at least 1 digit
-    private val passwordRegex = Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$")
+    private val passwordRegex = com.ntuli.apexledger.util.Validators.PASSWORD
 
     private lateinit var etFullName: EditText
     private lateinit var etEmail: EditText
@@ -118,7 +118,7 @@ class RegisterActivity : AppCompatActivity() {
             if (email.isEmpty()) {
                 showFieldError(etEmail, tvErrorEmail, "Email is required")
                 hasError = true
-            } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            } else if (!com.ntuli.apexledger.util.Validators.isValidEmail(email)) {
                 showFieldError(etEmail, tvErrorEmail, "Enter a valid email address")
                 hasError = true
             }
@@ -126,7 +126,7 @@ class RegisterActivity : AppCompatActivity() {
                 showFieldError(etPhone, tvErrorPhone, "Phone number is required")
                 hasError = true
             }
-            if (!Regex("^\\d{10}$").matches(taxNumber)) {
+            if (!com.ntuli.apexledger.util.Validators.isValidTaxNumber(taxNumber)) {
                 showFieldError(etTaxNumber, tvErrorTaxNumber, "Tax number must be exactly 10 digits")
                 hasError = true
             }

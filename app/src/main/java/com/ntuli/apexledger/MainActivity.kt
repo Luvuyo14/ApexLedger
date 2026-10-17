@@ -337,7 +337,7 @@ class MainActivity : AppCompatActivity() {
                     com.ntuli.apexledger.util.Feedback.show(this, "Please enter your email")
                     return@setPositiveButton
                 }
-                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                if (!com.ntuli.apexledger.util.Validators.isValidEmail(email)) {
                     com.ntuli.apexledger.util.Feedback.show(this, "Please enter a valid email address")
                     return@setPositiveButton
                 }

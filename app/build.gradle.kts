@@ -67,6 +67,6 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     implementation("androidx.cardview:cardview:1.0.0")
-
+    testImplementation("org.json:json:20231013")
 
 }

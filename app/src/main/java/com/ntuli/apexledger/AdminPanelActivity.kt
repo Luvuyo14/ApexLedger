@@ -136,7 +136,7 @@ class AdminPanelActivity : AppCompatActivity() {
         }
 
         // Same rule as client registration: 8+ chars, 1 uppercase, 1 number
-        val passwordRegex = Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$")
+        val passwordRegex = com.ntuli.apexledger.util.Validators.PASSWORD
 
         spinnerRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles.map { Labels.title(it) })
         fun showDepartmentsFor(role: String) {
@@ -191,7 +191,7 @@ class AdminPanelActivity : AppCompatActivity() {
                 tvErrorStaffEmail.text = "Email is required"
                 tvErrorStaffEmail.visibility = android.view.View.VISIBLE
                 hasError = true
-            } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            } else if (!com.ntuli.apexledger.util.Validators.isValidEmail(email)) {
                 etStaffEmail.setBackgroundResource(R.drawable.bg_input_field_error)
                 tvErrorStaffEmail.text = "Enter a valid email address"
                 tvErrorStaffEmail.visibility = android.view.View.VISIBLE
@@ -495,10 +495,10 @@ class AdminPanelActivity : AppCompatActivity() {
 
         val problem = when {
             name.isEmpty() -> "Full name is required"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Enter a valid email address"
-            !Regex("^(?=.*[A-Z])(?=.*\\d).{8,}$").matches(password) -> "Password needs 8+ characters, 1 uppercase letter and 1 number"
+            !com.ntuli.apexledger.util.Validators.isValidEmail(email) -> "Enter a valid email address"
+            !com.ntuli.apexledger.util.Validators.PASSWORD.matches(password) -> "Password needs 8+ characters, 1 uppercase letter and 1 number"
             phone.isEmpty() -> "Phone number is required"
-            !Regex("^\\d{10}$").matches(tax) -> "Tax number must be exactly 10 digits"
+            !com.ntuli.apexledger.util.Validators.isValidTaxNumber(tax) -> "Tax number must be exactly 10 digits"
             address.isEmpty() -> "Address is required"
             else -> null
         }
