@@ -50,7 +50,7 @@ This guide explains how to use the APEXLedger Android app. Find your role in the
 
 ### 1.3 Creating a client account
 
-![Registration form](docs/screenshots/register.png)
+![Registration form](docs/screenshots/register.jpeg)
 *Figure 2: Registration form*
 
 1. On the login screen tap **Create an account**.
@@ -71,7 +71,7 @@ The top bar has a **menu button (three lines)** on the left. Tap it, or swipe fr
 
 ### 2.1 Your dashboard
 
-![Client dashboard](docs/screenshots/client-dashboard.png)
+![Client dashboard](docs/screenshots/client-dashboard.jpeg)
 *Figure 3: Client dashboard*
 
 | Element | Meaning |
@@ -94,7 +94,7 @@ The top bar has a **menu button (three lines)** on the left. Tap it, or swipe fr
 
 ### 2.2 Requesting a service
 
-![Service tickets](docs/screenshots/client-tickets.png)
+![Service tickets](docs/screenshots/client-tickets.jpeg)
 *Figure 4: Service Tickets*
 
 1. Open **Service Tickets** from the sidebar, or tap **Request a Service**.
@@ -120,7 +120,7 @@ Use the two dropdowns at the top (**All statuses**, **All priorities**) to filte
 
 ### 2.3 Uploading and opening documents
 
-![Documents screen](docs/screenshots/client-documents.png)
+![Documents screen](docs/screenshots/client-documents.jpeg)
 *Figure 5: Documents*
 
 **To upload**
@@ -142,7 +142,7 @@ Use the two dropdowns at the top (**All statuses**, **All priorities**) to filte
 
 ### 2.4 Messaging your accountant
 
-![Messages](docs/screenshots/client-messages.png)
+![Messages](docs/screenshots/client-messages.jpeg)
 *Figure 6: Messages*
 
 1. Open **Messages**.
@@ -155,7 +155,7 @@ Use the two dropdowns at the top (**All statuses**, **All priorities**) to filte
 
 ### 2.5 Notifications
 
-![Notifications](docs/screenshots/notifications.png)
+![Notifications](docs/screenshots/notifications.jpeg)
 *Figure 7: Notifications*
 
 - The **bell** shows how many you have not read. Your phone also shows an alert when something new arrives (allow notifications when the app asks).
@@ -169,7 +169,7 @@ Use the two dropdowns at the top (**All statuses**, **All priorities**) to filte
 
 ### 3.1 Your dashboard
 
-![Staff dashboard](docs/screenshots/staff-dashboard.png)
+![Staff dashboard](docs/screenshots/staff-dashboard.jpeg)
 *Figure 8: Staff dashboard*
 
 | Element | Meaning |
@@ -186,7 +186,7 @@ The **sidebar** shows Dashboard, Documents, Messages, Service Tickets, My Profil
 
 ### 3.2 Working on tickets
 
-![Staff tickets](docs/screenshots/staff-tickets.png)
+![Staff tickets](docs/screenshots/staff-tickets.jpeg)
 *Figure 9: Staff tickets*
 
 - Each ticket shows the client, service, **Created** date, priority and due date.
@@ -196,7 +196,7 @@ The **sidebar** shows Dashboard, Documents, Messages, Service Tickets, My Profil
 
 ### 3.3 Reviewing documents
 
-![Document management](docs/screenshots/staff-documents.png)
+![Document management](docs/screenshots/staff-documents.jpeg)
 *Figure 10: Document Management*
 
 - You see the documents **routed to your service**. For example, a Payroll accountant sees Payroll documents from any client.
@@ -215,7 +215,7 @@ Same as the client screen, plus: new conversations are started with a **client f
 
 A manager can do everything an accountant can review, except uploading documents. Managers also see **Reports** in the sidebar.
 
-![Reports](docs/screenshots/reports.png)
+![Reports](docs/screenshots/reports.jpeg)
 *Figure 11: Reports*
 
 | Element | Meaning |
@@ -235,7 +235,7 @@ An administrator has the staff dashboard plus **Reports** and the **Admin Panel*
 
 ### 5.1 User Management
 
-![Admin panel](docs/screenshots/admin-panel.png)
+![Admin panel](docs/screenshots/admin-panel.jpeg)
 *Figure 12: Admin Panel, User Management tab*
 
 **Adding staff:** tap **+ Add Staff**, fill in the form and tap **Create User**.
@@ -272,7 +272,7 @@ Under **Messages → Start a Conversation**, the dropdown lists **every client a
 
 Open **My Profile** from the sidebar.
 
-![Profile and settings](docs/screenshots/profile.png)
+![Profile and settings](docs/screenshots/profile.jpeg)
 *Figure 13: My Profile*
 
 | Setting | How |
