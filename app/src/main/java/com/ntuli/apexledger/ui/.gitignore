@@ -16,4 +16,4 @@ local.properties
 
 # Firebase config - keep private, don't commit real keys to a public repo
 # Comment out the line below if this repo is private and you WANT it tracked
-# app/google-services.json
+app/google-services.json
