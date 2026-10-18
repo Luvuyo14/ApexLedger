@@ -79,11 +79,11 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 
 | Login | Client dashboard | Documents |
 |---|---|---|
-| ![login](docs/screenshots/login.png) | ![client](docs/screenshots/client-dashboard.png) | ![documents](docs/screenshots/client-documents.png) |
+| ![login](docs/screenshots/login.jpeg) | ![client](docs/screenshots/client-dashboard.jpeg) | ![documents](docs/screenshots/client-documents.jpeg) |
 
 | Staff dashboard | Reports | Admin panel |
 |---|---|---|
-| ![staff](docs/screenshots/staff-dashboard.png) | ![reports](docs/screenshots/reports.png) | ![admin](docs/screenshots/admin-panel.png) |
+| ![staff](docs/screenshots/staff-dashboard.jpeg) | ![reports](docs/screenshots/reports.jpeg) | ![admin](docs/screenshots/admin-panel.jpeg) |
 
 More screens are in the [user guide](USER_GUIDE.md).
 
