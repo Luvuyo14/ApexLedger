@@ -6,13 +6,13 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 
 | | |
 |---|---|
-| **Author** | [Luuvuyo] ([ST10442920]),[Nyiko] ([ST10450403]),[Precious] ([ST10452719]) |
-| **Module** | [Module name / code] |
+| **Author** | Luuvuyo ST10442920,Nyiko ST10450403,Precious ST10452719 |
+| **Module** | Work integration Learning  / XISD6329 |
 | **Platform** | Android 7.0+ (API 24), tested on a physical phone |
 | **Language** | Kotlin |
 | **Backend** | Firebase Authentication + Cloud Firestore |
 | **External API** | Nager.Date public holidays REST API |
-| **Repository** | [https://github.com/your-username/ApexLedger] |
+| **Repository** | [https://github.com/Luvuyo14/ApexLedger] |
 
 **Documentation:** [User guide](USER_GUIDE.md) | [Database design](docs/DATABASE.md) | [Firestore security rules](firestore.rules)
 
