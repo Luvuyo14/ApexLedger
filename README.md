@@ -353,18 +353,18 @@ The HTML report is written to `app/build/reports/tests/testDebugUnitTest/index.h
 
 ### Manual test checklist (before each demo)
 
-- [ ] Register a client, log out, log in again
-- [ ] Sign in with Google (new and existing account)
-- [ ] Five wrong passwords lock the account
-- [ ] Create a ticket and check its number and created date
-- [ ] Upload a PDF as a client and check that the right accountant is shown
-- [ ] As an accountant, approve the document and check that the client is notified
-- [ ] Tap the notification and check that it opens the document
-- [ ] Message from client to accountant and from admin to a staff member
-- [ ] Deactivate a user and check that they cannot log in
-- [ ] Switch dark mode on and off
-- [ ] Set a due date on a Sunday and on 16 Dec 2026: the warning appears and the next working day is offered
-- [ ] Set a due date in a year never opened before with airplane mode on: the "check skipped" message appears and the date is still saved
+- [ x] Register a client, log out, log in again
+- [ x] Sign in with Google (new and existing account)
+- [x ] Five wrong passwords lock the account
+- [ x] Create a ticket and check its number and created date
+- [ x] Upload a PDF as a client and check that the right accountant is shown
+- [ x] As an accountant, approve the document and check that the client is notified
+- [ x] Tap the notification and check that it opens the document
+- [ x] Message from client to accountant and from admin to a staff member
+- [ x] Deactivate a user and check that they cannot log in
+- [ x] Switch dark mode on and off
+- [ x] Set a due date on a Sunday and on 16 Dec 2026: the warning appears and the next working day is offered
+- [ x] Set a due date in a year never opened before with airplane mode on: the "check skipped" message appears and the date is still saved
 
 ---
 
