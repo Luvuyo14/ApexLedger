@@ -31,7 +31,7 @@ This guide explains how to use the APEXLedger Android app. Find your role in the
 
 ### 1.2 Signing in
 
-![Login screen](docs/screenshots/login.png)
+![Login screen](docs/screenshots/login.jpeg)
 *Figure 1: Login screen*
 
 | Element | What it does |
