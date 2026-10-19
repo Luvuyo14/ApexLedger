@@ -79,11 +79,11 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 
 | Login | Client dashboard | Documents |
 |---|---|---|
-| ![login](docs/screenshots/login.png) | ![client](docs/screenshots/client-dashboard.png) | ![documents](docs/screenshots/client-documents.png) |
+| ![login](docs/screenshots/login.jpeg) | ![client](docs/screenshots/client-dashboard.jpeg) | ![documents](docs/screenshots/client-documents.jpeg) |
 
 | Staff dashboard | Reports | Admin panel |
 |---|---|---|
-| ![staff](docs/screenshots/staff-dashboard.png) | ![reports](docs/screenshots/reports.png) | ![admin](docs/screenshots/admin-panel.png) |
+| ![staff](docs/screenshots/staff-dashboard.jpeg) | ![reports](docs/screenshots/reports.jpeg) | ![admin](docs/screenshots/admin-panel.jpeg) |
 
 More screens are in the [user guide](USER_GUIDE.md).
 
@@ -339,6 +339,7 @@ ApexLedger/
 | `LabelsTest` | 5 | Service, status and priority wording; ticket number prefixes (TAX, PAY, ADV, BKP, AUD) |
 | `DateUtilsTest` | 7 | Overdue rules, days until a date, days late, website date format |
 
+![Unit test report](docs/screenshots/test-report.png)
 Run them from Android Studio (right-click `app/src/test` → **Run Tests**) or the terminal:
 
 ```bash
@@ -353,18 +354,18 @@ The HTML report is written to `app/build/reports/tests/testDebugUnitTest/index.h
 
 ### Manual test checklist (before each demo)
 
-- [ ] Register a client, log out, log in again
-- [ ] Sign in with Google (new and existing account)
-- [ ] Five wrong passwords lock the account
-- [ ] Create a ticket and check its number and created date
-- [ ] Upload a PDF as a client and check that the right accountant is shown
-- [ ] As an accountant, approve the document and check that the client is notified
-- [ ] Tap the notification and check that it opens the document
-- [ ] Message from client to accountant and from admin to a staff member
-- [ ] Deactivate a user and check that they cannot log in
-- [ ] Switch dark mode on and off
-- [ ] Set a due date on a Sunday and on 16 Dec 2026: the warning appears and the next working day is offered
-- [ ] Set a due date in a year never opened before with airplane mode on: the "check skipped" message appears and the date is still saved
+- [ x] Register a client, log out, log in again
+- [ x] Sign in with Google (new and existing account)
+- [x ] Five wrong passwords lock the account
+- [ x] Create a ticket and check its number and created date
+- [ x] Upload a PDF as a client and check that the right accountant is shown
+- [ x] As an accountant, approve the document and check that the client is notified
+- [ x] Tap the notification and check that it opens the document
+- [ x] Message from client to accountant and from admin to a staff member
+- [ x] Deactivate a user and check that they cannot log in
+- [ x] Switch dark mode on and off
+- [ x] Set a due date on a Sunday and on 16 Dec 2026: the warning appears and the next working day is offered
+- [ x] Set a due date in a year never opened before with airplane mode on: the "check skipped" message appears and the date is still saved
 
 ---
 
@@ -415,4 +416,4 @@ The HTML report is written to `app/build/reports/tests/testDebugUnitTest/index.h
 
 ## Licence
 
-[Choose a licence, e.g. MIT, or write "Academic project, all rights reserved".]
+Academic project 
