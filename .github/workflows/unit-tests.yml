@@ -5,10 +5,15 @@ on:
     branches: [ main ]
   pull_request:
 
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Get the code
@@ -22,13 +27,17 @@ jobs:
 
       - name: Set up the Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Overrides the default, which includes the removed "tools" package.
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Create a placeholder google-services.json (CI only)
         run: |
-          cat > app/google-services.json <<'EOF'
+          if [ ! -f app/google-services.json ]; then
+            cat > app/google-services.json <<'EOF'
           {
             "project_info": {
               "project_number": "123456789012",
@@ -49,6 +58,7 @@ jobs:
             "configuration_version": "1"
           }
           EOF
+          fi
 
       - name: Make Gradle runnable
         run: chmod +x ./gradlew
@@ -61,4 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
-          path: app/build/reports/tests/testDebugUnitTest
+          path: |
+            app/build/reports/tests/testDebugUnitTest
+            app/build/test-results/testDebugUnitTest
+          if-no-files-found: warn
