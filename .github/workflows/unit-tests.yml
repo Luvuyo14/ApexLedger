@@ -28,8 +28,8 @@ jobs:
       - name: Set up the Android SDK
         uses: android-actions/setup-android@v3
         with:
-          # The default includes the removed "tools" package, which breaks the step.
-          packages: 'platform-tools'
+          # Overrides the default, which includes the removed "tools" package.
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
