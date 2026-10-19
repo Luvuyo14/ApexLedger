@@ -339,6 +339,7 @@ ApexLedger/
 | `LabelsTest` | 5 | Service, status and priority wording; ticket number prefixes (TAX, PAY, ADV, BKP, AUD) |
 | `DateUtilsTest` | 7 | Overdue rules, days until a date, days late, website date format |
 
+![Unit test report](docs/screenshots/test-report.png)
 Run them from Android Studio (right-click `app/src/test` → **Run Tests**) or the terminal:
 
 ```bash
