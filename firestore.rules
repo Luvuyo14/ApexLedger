@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isStaff() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin', 'manager'];
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Admins and accountants may upload documents for clients (managers may only review)
+    function canUploadForClient() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin'];
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        isStaff() ||
+        resource.data.role == 'accountant'
+      );
+
+      allow create: if request.auth != null && (
+        (request.auth.uid == userId && request.resource.data.role == 'client') ||
+        isAdmin()
+      );
+
+      allow update: if request.auth != null && (
+        (
+          request.auth.uid == userId &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.get('department', null) == resource.data.get('department', null) &&
+          request.resource.data.get('assignedAccountantId', null) == resource.data.get('assignedAccountantId', null) &&
+          request.resource.data.get('taxNumber', null) == resource.data.get('taxNumber', null) &&
+          request.resource.data.get('active', null) == resource.data.get('active', null)
+        ) ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /documents/{docId} {
+      allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
+      allow create: if request.auth != null && (
+        request.resource.data.clientId == request.auth.uid || canUploadForClient()
+      );
+      allow update: if request.auth != null && (
+        isStaff() ||
+        (resource.data.clientId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uploadComplete']))
+      );
+      allow delete: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
+
+      match /chunks/{chunkId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/documents/$(docId)).data.clientId == request.auth.uid || isStaff()
+        );
+        allow create: if request.auth != null && (
+          get(/databases/$(database)/documents/documents/$(docId)).data.clientId == request.auth.uid ||
+          canUploadForClient()
+        );
+        allow delete: if request.auth != null && (
+          get(/databases/$(database)/documents/documents/$(docId)).data.clientId == request.auth.uid || isStaff()
+        );
+      }
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if request.auth != null &&
+        (resource.data.clientId == request.auth.uid || isStaff());
+      allow create: if request.auth != null &&
+        request.resource.data.clientId == request.auth.uid;
+      allow update: if request.auth != null && (
+        isStaff() ||
+        (resource.data.clientId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description']))
+      );
+      allow delete: if isStaff();
+    }
+
+    match /ticket_notes/{ticketId} {
+      allow read, write: if isStaff();
+    }
+
+    match /counters/{doc} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.last == 1;
+      allow update: if request.auth != null &&
+        request.resource.data.last == resource.data.last + 1;
+    }
+
+      match /notifications/{notificationId} {
+      allow read: if request.auth != null && resource.data.recipientUid == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && resource.data.recipientUid == request.auth.uid;
+      // People can delete their own notifications
+      allow delete: if request.auth != null && resource.data.recipientUid == request.auth.uid;
+    }
+
+    match /threads/{threadId} {
+      allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
+      allow create: if request.auth != null && (request.resource.data.clientId == request.auth.uid || isStaff());
+      allow update: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/threads/$(threadId)).data.clientId == request.auth.uid || isStaff()
+        );
+        allow create: if request.auth != null && (
+          get(/databases/$(database)/documents/threads/$(threadId)).data.clientId == request.auth.uid || isStaff()
+        ) && request.resource.data.senderId == request.auth.uid;
+        allow update: if request.auth != null && (
+          get(/databases/$(database)/documents/threads/$(threadId)).data.clientId == request.auth.uid || isStaff()
+        );
+      }
+    }
+
+    match /audit_log/{logId} {
+      allow read: if isStaff();
+      allow create: if request.auth != null ||
+        request.resource.data.action == 'Failed Login';
+    }
+  }
+}

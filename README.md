@@ -18,6 +18,7 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 | **External API** | Nager.Date public holidays REST API |
 | **Repository** | [https://github.com/Luvuyo14/ApexLedger] |
 
+![Unit tests](https://github.com/Luvuyo14/ApexLedger/actions/workflows/unit-tests.yml/badge.svg)
 **Documentation:** [User guide](USER_GUIDE.md) | [Database design](docs/DATABASE.md) | [Firestore security rules](firestore.rules)
 
 ---
@@ -355,6 +356,10 @@ Run them from Android Studio (right-click `app/src/test` → **Run Tests**) or t
 ```
 
 The HTML report is written to `app/build/reports/tests/testDebugUnitTest/index.html`.
+
+### Continuous integration
+
+Every push to `main` runs the unit tests automatically on GitHub Actions (`.github/workflows/unit-tests.yml`). The workflow installs Java 17 and the Android SDK, builds the app with a placeholder Firebase file (the real `google-services.json` is never uploaded), runs all 34 tests, and saves the HTML test report as a downloadable artifact. The badge at the top of this README shows whether the latest run passed.
 
 ### Manual test checklist (before each demo)
 
