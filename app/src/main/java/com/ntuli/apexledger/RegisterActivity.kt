@@ -183,7 +183,7 @@ class RegisterActivity : AppCompatActivity() {
                         }
 
                         val profile = hashMapOf(
-                            "full_name" to fullName,
+                            "fullName" to fullName,
                             "email" to email,
                             "phone" to phone,
                             "taxNumber" to taxNumber,
@@ -191,10 +191,10 @@ class RegisterActivity : AppCompatActivity() {
                             "address" to address,
                             "role" to "client",
                             "assignedAccountantId" to (matchedAccountant?.id ?: ""),
-                            "notify_email" to true,
-                            "notify_sms" to false,
-                            "notify_push" to true,
-                            "created_at" to com.google.firebase.Timestamp.now()
+                            "notifyEmail" to true,
+                            "notifySms" to false,
+                            "notifyPush" to true,
+                            "createdAt" to com.google.firebase.Timestamp.now()
                         )
 
                         db.collection("users").document(newUser.uid).set(profile)
@@ -211,7 +211,7 @@ class RegisterActivity : AppCompatActivity() {
                                 auth.signOut()
                                 tvStatus.setTextColor(0xFF2E7D32.toInt())
                                 tvStatus.text = if (matchedAccountant != null) {
-                                    "Account created! You've been assigned to ${matchedAccountant.getString("full_name")}. You can now sign in."
+                                    "Account created! You've been assigned to ${matchedAccountant.getString("fullName")}. You can now sign in."
                                 } else {
                                     if (servicePreference.isEmpty()) {
                                         "Account created! You can now sign in. An accountant is assigned to you when you request a service."

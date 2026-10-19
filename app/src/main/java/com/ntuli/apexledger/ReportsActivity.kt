@@ -74,12 +74,12 @@ class ReportsActivity : AppCompatActivity() {
     private fun loadReportData() {
         db.collection("users").whereEqualTo("role", "client").get()
             .addOnSuccessListener { clientsResult ->
-                val clientNames = clientsResult.documents.associate { it.id to (it.getString("full_name") ?: "Unknown client") }
+                val clientNames = clientsResult.documents.associate { it.id to (it.getString("fullName") ?: "Unknown client") }
                 val clientToAccountant = clientsResult.documents.associate { it.id to (it.getString("assignedAccountantId") ?: "") }
 
                 db.collection("users").whereEqualTo("role", "accountant").get()
                     .addOnSuccessListener { accountantsResult ->
-                        val accountantNames = accountantsResult.documents.associate { it.id to (it.getString("full_name") ?: "Unassigned") }
+                        val accountantNames = accountantsResult.documents.associate { it.id to (it.getString("fullName") ?: "Unassigned") }
                         activeAccountantIds = accountantsResult.documents
                             .filter { it.getBoolean("active") != false }.map { it.id }.toSet()
 

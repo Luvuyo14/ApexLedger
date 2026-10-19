@@ -228,12 +228,12 @@ class AdminPanelActivity : AppCompatActivity() {
                 }
 
                 val profile = hashMapOf(
-                    "full_name" to name,
+                    "fullName" to name,
                     "email" to email,
                     "role" to role,
                     "department" to department,
                     "active" to true,
-                    "created_at" to com.google.firebase.Timestamp.now()
+                    "createdAt" to com.google.firebase.Timestamp.now()
                 )
 
                 db.collection("users").document(newUid).set(profile)
@@ -275,7 +275,7 @@ class AdminPanelActivity : AppCompatActivity() {
                 val staff = result.documents.map { d ->
                     StaffMember(
                         uid = d.id,
-                        fullName = d.getString("full_name") ?: "Unnamed",
+                        fullName = d.getString("fullName") ?: "Unnamed",
                         email = d.getString("email") ?: "",
                         role = d.getString("role") ?: "accountant",
                         department = d.getString("department") ?: "",
@@ -428,12 +428,12 @@ class AdminPanelActivity : AppCompatActivity() {
         db.collection("users").get().addOnSuccessListener { result ->
             val everyone = result.documents
             val clients = everyone.filter { it.getString("role") == "client" }
-                .sortedBy { it.getString("full_name")?.lowercase() ?: "" }
+                .sortedBy { it.getString("fullName")?.lowercase() ?: "" }
             val accountants = everyone.filter { it.getString("role") == "accountant" }.associateBy { it.id }
 
             // Assign box dropdown
             clientIds = clients.map { it.id }
-            clientNames = clients.map { it.getString("full_name") ?: "Unnamed client" }
+            clientNames = clients.map { it.getString("fullName") ?: "Unnamed client" }
             findViewById<Spinner>(R.id.spinnerAssignClient).adapter = ArrayAdapter(
                 this, android.R.layout.simple_spinner_dropdown_item,
                 if (clientNames.isEmpty()) listOf("No clients yet") else clientNames
@@ -447,7 +447,7 @@ class AdminPanelActivity : AppCompatActivity() {
             container.removeAllViews()
             for (c in clients) {
                 val row = layoutInflater.inflate(R.layout.item_client_admin_row, container, false)
-                val name = c.getString("full_name") ?: "Unnamed client"
+                val name = c.getString("fullName") ?: "Unnamed client"
                 val active = c.getBoolean("active") != false
                 val acc = accountants[c.getString("assignedAccountantId") ?: ""]
                 row.findViewById<TextView>(R.id.tvClientAvatar).text = StatCards.initials(name)
@@ -457,7 +457,7 @@ class AdminPanelActivity : AppCompatActivity() {
                     "Tax number: " + ((c.getString("taxNumber") ?: "").ifEmpty { "not provided" })
                 row.findViewById<TextView>(R.id.tvClientAccountant).text =
                     if (acc == null) "No accountant assigned yet"
-                    else "Accountant: ${acc.getString("full_name") ?: "-"}  •  " +
+                    else "Accountant: ${acc.getString("fullName") ?: "-"}  •  " +
                             ((acc.getString("department") ?: "").substringBefore("(").trim().ifEmpty { "General" }) + " accountant"
                 val status = row.findViewById<TextView>(R.id.tvClientStatus)
                 val toggle = row.findViewById<TextView>(R.id.btnToggleClient)
@@ -519,11 +519,11 @@ class AdminPanelActivity : AppCompatActivity() {
                 }
                 com.ntuli.apexledger.util.AccountantRouter.pick(db, newUid, service, "tickets") { pick ->
                     val profile = hashMapOf(
-                        "full_name" to name, "email" to email, "phone" to phone, "taxNumber" to tax,
+                        "fullName" to name, "email" to email, "phone" to phone, "taxNumber" to tax,
                         "servicePreference" to service, "address" to address, "role" to "client",
                         "assignedAccountantId" to (pick?.id ?: ""), "active" to true,
-                        "notify_email" to true, "notify_sms" to false, "notify_push" to true,
-                        "created_at" to com.google.firebase.Timestamp.now()
+                        "notifyEmail" to true, "notifySms" to false, "notifyPush" to true,
+                        "createdAt" to com.google.firebase.Timestamp.now()
                     )
                     db.collection("users").document(newUid).set(profile)
                         .addOnSuccessListener {
@@ -596,7 +596,7 @@ class AdminPanelActivity : AppCompatActivity() {
             .addOnSuccessListener { result ->
                 val activeDocs = result.documents.filter { it.getBoolean("active") != false }
                 accountantIds = activeDocs.map { it.id }
-                accountantNames = activeDocs.map { it.getString("full_name") ?: "Unnamed accountant" }
+                accountantNames = activeDocs.map { it.getString("fullName") ?: "Unnamed accountant" }
 
                 val displayNames = if (accountantNames.isEmpty()) listOf("No accountants yet") else accountantNames
                 findViewById<Spinner>(R.id.spinnerAssignAccountant).adapter =

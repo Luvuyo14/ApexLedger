@@ -116,7 +116,7 @@ class StaffMessagesActivity : AppCompatActivity() {
                 pickableRoles = free.associate { it.id to (it.getString("role") ?: "client") }
                 val names = free.map {
                     val role = it.getString("role") ?: "client"
-                    val n = it.getString("full_name") ?: "Unknown"
+                    val n = it.getString("fullName") ?: "Unknown"
                     if (role == "client") n else "$n (${com.ntuli.apexledger.util.Labels.title(role)})"
                 }
                 val shown = if (names.isNotEmpty()) names else listOf(emptyText)
@@ -128,7 +128,7 @@ class StaffMessagesActivity : AppCompatActivity() {
                 if (me.getString("role") == "admin") {
                     // An administrator can message everyone: every client and every staff member
                     db.collection("users").get().addOnSuccessListener { all ->
-                        fill(all.documents.sortedBy { it.getString("full_name")?.lowercase() ?: "" }, "Everyone already has a conversation")
+                        fill(all.documents.sortedBy { it.getString("fullName")?.lowercase() ?: "" }, "Everyone already has a conversation")
                     }
                 } else {
                     db.collection("users").whereEqualTo("assignedAccountantId", uid).get()
@@ -146,7 +146,7 @@ class StaffMessagesActivity : AppCompatActivity() {
         val isUrgent = urgentKeywords.any { firstMessage.lowercase().contains(it) }
 
         db.collection("users").document(uid).get().addOnCompleteListener { meTask ->
-            val myName = (if (meTask.isSuccessful) meTask.result?.getString("full_name") else null) ?: "Your accountant"
+            val myName = (if (meTask.isSuccessful) meTask.result?.getString("fullName") else null) ?: "Your accountant"
             val threadData = hashMapOf(
                 "clientId" to clientId,
                 "subject" to subject,

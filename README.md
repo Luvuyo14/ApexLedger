@@ -264,7 +264,7 @@ The app creates clients and staff itself, but the very first admin must be creat
 
 | Field | Type | Value |
 |---|---|---|
-| full_name | string | your name |
+| fullName | string | your name |
 | email | string | the admin email |
 | role | string | `admin` |
 | department | string | `Administration` |

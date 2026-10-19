@@ -27,7 +27,7 @@ object StaffData {
                 val everyone = if (cTask.isSuccessful) cTask.result.documents else emptyList()
                 val clients = everyone.filter { it.getString("role") == "client" }
                 // names for clients AND staff, so conversations with staff show a proper name
-                val names = everyone.associate { it.id to (it.getString("full_name") ?: "Unknown") }
+                val names = everyone.associate { it.id to (it.getString("fullName") ?: "Unknown") }
                 val assigned = clients.filter { it.getString("assignedAccountantId") == uid }.map { it.id }
 
                 if (role == "admin" || role == "manager") {

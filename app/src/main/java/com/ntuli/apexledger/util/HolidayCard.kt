@@ -1,7 +1,5 @@
-package com.ntuli.apexledger.util
 
-class HolidayCard {
-}package com.ntuli.apexledger.util
+package com.ntuli.apexledger.util
 
 import android.app.Activity
 import android.view.View

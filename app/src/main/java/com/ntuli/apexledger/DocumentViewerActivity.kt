@@ -81,7 +81,7 @@ class DocumentViewerActivity : AppCompatActivity() {
 
                 val clientId = d.getString("clientId") ?: ""
                 db.collection("users").document(clientId).get().addOnSuccessListener { u ->
-                    findViewById<TextView>(R.id.tvClient).text = u.getString("full_name") ?: "-"
+                    findViewById<TextView>(R.id.tvClient).text = u.getString("fullName") ?: "-"
                 }
 
                 // Small images show a preview straight away

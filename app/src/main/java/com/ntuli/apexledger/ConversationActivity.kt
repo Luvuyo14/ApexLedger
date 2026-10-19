@@ -98,14 +98,14 @@ class ConversationActivity : AppCompatActivity() {
                         val accId = client.getString("assignedAccountantId")
                         if (!accId.isNullOrEmpty()) {
                             db.collection("users").document(accId).get().addOnSuccessListener { acc ->
-                                acc.getString("full_name")?.let { toolbar.title = "Chatting with $it" }
+                                acc.getString("fullName")?.let { toolbar.title = "Chatting with $it" }
                             }
                         }
                     }
                 }
             } else {
                 db.collection("users").document(clientId).get().addOnSuccessListener { client ->
-                    client.getString("full_name")?.let { toolbar.title = "Chatting with $it" }
+                    client.getString("fullName")?.let { toolbar.title = "Chatting with $it" }
                 }
             }
         }

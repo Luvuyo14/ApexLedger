@@ -112,7 +112,7 @@ class StaffDashboardActivity : AppCompatActivity() {
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
-                    val fullName = doc.getString("full_name") ?: auth.currentUser?.email
+                    val fullName = doc.getString("fullName") ?: auth.currentUser?.email
                     val role = doc.getString("role") ?: "accountant"
                     val department = doc.getString("department") ?: ""
 
@@ -121,6 +121,14 @@ class StaffDashboardActivity : AppCompatActivity() {
 
                     isOrgWide = role == "admin" || role == "manager"
                     staffRole = role
+
+
+                    // one-time database clean-up (renames old snake_case user fields), admin only
+                    if (role == "admin") {
+                        com.ntuli.apexledger.util.DataMigration.renameUserFields(this) { changed ->
+                            if (changed > 0) recreate()
+                        }
+                    }
 
                     // "Taxation (accountant)" -> "Taxation Duty" (same wording as the website)
                     val duty = department.substringBefore("(").trim()
@@ -220,7 +228,7 @@ class StaffDashboardActivity : AppCompatActivity() {
         StatCards.decorate(findViewById(R.id.statUnreadMessages), R.drawable.ic_stat_briefcase, R.color.success)
 
         db.collection("users").get().addOnSuccessListener { users ->
-            val clientNames = users.documents.associate { it.id to (it.getString("full_name") ?: "Unknown client") }
+            val clientNames = users.documents.associate { it.id to (it.getString("fullName") ?: "Unknown client") }
             setStat(R.id.statMyClients, "Active Clients", users.documents.count { it.getString("role") == "client" && it.getBoolean("active") != false }.toString())
             setStat(R.id.statUnreadMessages, "Accountants", users.documents.count { it.getString("role") == "accountant" && it.getBoolean("active") != false }.toString())
 
@@ -278,7 +286,7 @@ class StaffDashboardActivity : AppCompatActivity() {
 
         val container = DashRows.section(card, "Clients Without an Accountant (${unassigned.size})")
         for (client in unassigned) {
-            val name = client.getString("full_name") ?: "Unnamed client"
+            val name = client.getString("fullName") ?: "Unnamed client"
             val service = client.getString("servicePreference") ?: ""
             DashRows.addRow(
                 container, name, if (service.isEmpty()) "No service chosen" else "Wants: ${Labels.service(service)}",
@@ -316,12 +324,12 @@ class StaffDashboardActivity : AppCompatActivity() {
             val duty = (it.getString("department") ?: "").substringBefore("(").trim()
             val n = clientCounts[it.id] ?: 0
             val match = keyword.isNotEmpty() && (it.getString("department") ?: "").startsWith(keyword)
-            "${it.getString("full_name") ?: "Accountant"} - $duty - $n client${if (n == 1) "" else "s"}" +
+            "${it.getString("fullName") ?: "Accountant"} - $duty - $n client${if (n == 1) "" else "s"}" +
                     if (match) " (matches service)" else ""
         }.toTypedArray()
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("Assign ${client.getString("full_name") ?: "client"}")
+            .setTitle("Assign ${client.getString("fullName") ?: "client"}")
             .setItems(labels) { _, which ->
                 val acc = ranked[which]
                 db.collection("users").document(client.id)
@@ -329,7 +337,7 @@ class StaffDashboardActivity : AppCompatActivity() {
                     .addOnSuccessListener {
                         AuditLogger.logEvent(
                             "Admin", "Assign Client",
-                            "${client.getString("full_name")} assigned to accountant ${acc.getString("full_name")}"
+                            "${client.getString("fullName")} assigned to accountant ${acc.getString("fullName")}"
                         )
                         com.ntuli.apexledger.util.Feedback.show(this, "Assigned")
                         loadData()

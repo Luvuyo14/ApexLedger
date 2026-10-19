@@ -62,15 +62,15 @@ class ProfileActivity : AppCompatActivity() {
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
-                    val fullName = doc.getString("full_name") ?: ""
+                    val fullName = doc.getString("fullName") ?: ""
                     etFullName.setText(fullName)
                     tvAvatarInitials.text = initialsFrom(fullName)
-                    switchEmail.isChecked = doc.getBoolean("notify_email") ?: true
-                    switchSms.isChecked = doc.getBoolean("notify_sms") ?: false
-                    switchPush.isChecked = doc.getBoolean("notify_push") ?: true
+                    switchEmail.isChecked = doc.getBoolean("notifyEmail") ?: true
+                    switchSms.isChecked = doc.getBoolean("notifySms") ?: false
+                    switchPush.isChecked = doc.getBoolean("notifyPush") ?: true
 
                     val role = doc.getString("role") ?: "client"
-                    findViewById<TextView>(R.id.tvBannerTitle).text = doc.getString("full_name") ?: "My Profile"
+                    findViewById<TextView>(R.id.tvBannerTitle).text = doc.getString("fullName") ?: "My Profile"
                     findViewById<TextView>(R.id.tvBannerSubtitle).text =
                         listOf(doc.getString("email") ?: "", Labels.title(role)).filter { it.isNotEmpty() }.joinToString("  •  ")
                     isClient = role == "client"
@@ -95,7 +95,7 @@ class ProfileActivity : AppCompatActivity() {
                 com.ntuli.apexledger.util.Feedback.show(this, "Full name is required")
                 return@setOnClickListener
             }
-            val personal = hashMapOf<String, Any>("full_name" to name)
+            val personal = hashMapOf<String, Any>("fullName" to name)
             if (isClient) {
                 personal["phone"] = etPhone.text.toString().trim()
                 personal["address"] = etAddress.text.toString().trim()
@@ -113,9 +113,9 @@ class ProfileActivity : AppCompatActivity() {
         btnSave.setOnClickListener {
             if (uid == null) return@setOnClickListener
             val updates = mapOf(
-                "notify_email" to switchEmail.isChecked,
-                "notify_sms" to switchSms.isChecked,
-                "notify_push" to switchPush.isChecked
+                "notifyEmail" to switchEmail.isChecked,
+                "notifySms" to switchSms.isChecked,
+                "notifyPush" to switchPush.isChecked
             )
             db.collection("users").document(uid).update(updates)
                 .addOnSuccessListener {

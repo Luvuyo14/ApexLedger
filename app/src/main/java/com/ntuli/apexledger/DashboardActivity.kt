@@ -104,7 +104,7 @@ class DashboardActivity : AppCompatActivity() {
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
-                    val fullName = doc.getString("full_name") ?: auth.currentUser?.email
+                    val fullName = doc.getString("fullName") ?: auth.currentUser?.email
                     val role = doc.getString("role") ?: "client"
                     tvWelcome.text = "Welcome back, $fullName!"
                     tvRole.text = "Client Portal"
@@ -256,7 +256,7 @@ class DashboardActivity : AppCompatActivity() {
         }
         db.collection("users").document(accountantId).get()
             .addOnSuccessListener { acc ->
-                val name = acc.getString("full_name") ?: "Your accountant"
+                val name = acc.getString("fullName") ?: "Your accountant"
                 val duty = (acc.getString("department") ?: "").substringBefore("(").trim()
                 val email = acc.getString("email") ?: ""
                 tvName.text = name

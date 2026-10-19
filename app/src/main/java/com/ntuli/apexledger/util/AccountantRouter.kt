@@ -31,7 +31,7 @@ object AccountantRouter {
                     if (aTask.isSuccessful) aTask.result.documents.filter { it.getBoolean("active") != false } else emptyList()
                 val keyword = duty(serviceType)
                 val matching = active.filter { keyword.isNotEmpty() && (it.getString("department") ?: "").startsWith(keyword) }
-                fun pickOf(d: DocumentSnapshot) = Pick(d.id, d.getString("full_name") ?: "Accountant")
+                fun pickOf(d: DocumentSnapshot) = Pick(d.id, d.getString("fullName") ?: "Accountant")
 
                 matching.firstOrNull { it.id == assigned }?.let { onDone(pickOf(it)); return@addOnCompleteListener }
 

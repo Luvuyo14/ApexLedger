@@ -123,16 +123,16 @@ class StaffDocumentsActivity : AppCompatActivity() {
 
         db.collection("users").document(uid).get().addOnSuccessListener { me ->
             myRole = me.getString("role") ?: ""
-            myName = me.getString("full_name") ?: ""
+            myName = me.getString("fullName") ?: ""
             // Managers can review but not upload (see the Permissions Matrix)
             if (myRole != "admin" && myRole != "accountant") return@addOnSuccessListener
             toggle.visibility = View.VISIBLE
 
             db.collection("users").whereEqualTo("role", "client").get().addOnSuccessListener { clients ->
                 val active = clients.documents.filter { it.getBoolean("active") != false }
-                    .sortedBy { it.getString("full_name")?.lowercase() ?: "" }
+                    .sortedBy { it.getString("fullName")?.lowercase() ?: "" }
                 clientIds = active.map { it.id }
-                val names = active.map { it.getString("full_name") ?: "Unknown client" }
+                val names = active.map { it.getString("fullName") ?: "Unknown client" }
                 spinnerClient.adapter = ArrayAdapter(
                     this, android.R.layout.simple_spinner_dropdown_item,
                     if (names.isEmpty()) listOf("No clients yet") else names
