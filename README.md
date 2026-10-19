@@ -415,4 +415,4 @@ The HTML report is written to `app/build/reports/tests/testDebugUnitTest/index.h
 
 ## Licence
 
-[Choose a licence, e.g. MIT, or write "Academic project, all rights reserved".]
+Academic project 
