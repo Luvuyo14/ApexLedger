@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+rules-test/node_modules
+google-services.json
+firestore-debug.log

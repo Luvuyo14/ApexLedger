@@ -3,18 +3,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isStaff() {
       return request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin', 'manager'];
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin', 'manager'];
     }
 
     function isAdmin() {
       return request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Admins and accountants may upload documents for clients (managers may only review)
     function canUploadForClient() {
       return request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin'];
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin'];
     }
 
     match /users/{userId} {
@@ -46,13 +46,21 @@ service cloud.firestore {
 
     match /documents/{docId} {
       allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
+
+      // A client can only create a PENDING, incomplete document (no self-approval)
       allow create: if request.auth != null && (
-        request.resource.data.clientId == request.auth.uid || canUploadForClient()
+        (
+          request.resource.data.clientId == request.auth.uid &&
+          request.resource.data.reviewStatus == 'pending' &&
+          request.resource.data.uploadComplete == false
+        ) ||
+        canUploadForClient()
       );
+
       allow update: if request.auth != null && (
         isStaff() ||
         (resource.data.clientId == request.auth.uid &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uploadComplete']))
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uploadComplete']))
       );
       allow delete: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
 
@@ -72,13 +80,17 @@ service cloud.firestore {
 
     match /tickets/{ticketId} {
       allow read: if request.auth != null &&
-        (resource.data.clientId == request.auth.uid || isStaff());
+      (resource.data.clientId == request.auth.uid || isStaff());
+
+      // A new ticket must start as 'open'
       allow create: if request.auth != null &&
-        request.resource.data.clientId == request.auth.uid;
+      request.resource.data.clientId == request.auth.uid &&
+      request.resource.data.status == 'open';
+
       allow update: if request.auth != null && (
         isStaff() ||
         (resource.data.clientId == request.auth.uid &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description']))
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description']))
       );
       allow delete: if isStaff();
     }
@@ -91,21 +103,36 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.last == 1;
       allow update: if request.auth != null &&
-        request.resource.data.last == resource.data.last + 1;
+      request.resource.data.last == resource.data.last + 1;
     }
 
-      match /notifications/{notificationId} {
+    match /notifications/{notificationId} {
       allow read: if request.auth != null && resource.data.recipientUid == request.auth.uid;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && resource.data.recipientUid == request.auth.uid;
-      // People can delete their own notifications
+
+      // The sender must be the signed-in user, and only known fields are allowed
+      allow create: if request.auth != null &&
+      request.resource.data.senderUid == request.auth.uid &&
+      request.resource.data.recipientUid is string &&
+      request.resource.data.isRead == false &&
+      request.resource.data.keys().hasOnly(
+        ['recipientUid', 'senderUid', 'type', 'title', 'body', 'targetId', 'isRead', 'createdAt']);
+
+      // The recipient can only mark it as read
+      allow update: if request.auth != null &&
+      resource.data.recipientUid == request.auth.uid &&
+      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+
       allow delete: if request.auth != null && resource.data.recipientUid == request.auth.uid;
     }
 
     match /threads/{threadId} {
       allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
       allow create: if request.auth != null && (request.resource.data.clientId == request.auth.uid || isStaff());
-      allow update: if request.auth != null && (resource.data.clientId == request.auth.uid || isStaff());
+
+      // The owner of a thread can never be changed
+      allow update: if request.auth != null &&
+      (resource.data.clientId == request.auth.uid || isStaff()) &&
+      request.resource.data.clientId == resource.data.clientId;
 
       match /messages/{messageId} {
         allow read: if request.auth != null && (
@@ -114,16 +141,31 @@ service cloud.firestore {
         allow create: if request.auth != null && (
           get(/databases/$(database)/documents/threads/$(threadId)).data.clientId == request.auth.uid || isStaff()
         ) && request.resource.data.senderId == request.auth.uid;
+
+        // Messages can only be marked as read, never edited
         allow update: if request.auth != null && (
           get(/databases/$(database)/documents/threads/$(threadId)).data.clientId == request.auth.uid || isStaff()
-        );
+        ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
       }
     }
 
     match /audit_log/{logId} {
       allow read: if isStaff();
-      allow create: if request.auth != null ||
-        request.resource.data.action == 'Failed Login';
+
+      // Entries must carry the signed-in user's own ID. Only 'Failed Login'
+      // may be written without signing in (actorUid must then be empty).
+      allow create: if
+      request.resource.data.keys().hasOnly(['actorUid', 'userType', 'action', 'details', 'timestamp']) &&
+      request.resource.data.details is string &&
+      request.resource.data.details.size() <= 500 &&
+      (
+        (request.auth != null && request.resource.data.actorUid == request.auth.uid) ||
+        (request.auth == null &&
+        request.resource.data.action == 'Failed Login' &&
+        request.resource.data.actorUid == '')
+      );
+
+      allow update, delete: if false;
     }
   }
 }
