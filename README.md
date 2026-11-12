@@ -1,8 +1,16 @@
 # APEXLedger
-# WebApp Repository: 
-https://github.com/PreciousMoloi/Apexleger_Web
-# Deployed WebApp live link:
-http://apexleger.infinityfree.me/
+
+## Video presentation
+**Watch the full demo of all app features:** [PASTE YOUR VIDEO LINK HERE](PASTE_YOUR_VIDEO_LINK_HERE)
+
+## Links
+| | |
+|---|---|
+| **Android app repository (this repo)** | https://github.com/Luvuyo14/ApexLedger |
+| **Website repository** | https://github.com/PreciousMoloi/Apexleger_Web |
+| **Deployed website** | http://apexleger.infinityfree.me/ |
+
+The website has its own README and screenshots in the website repository.
 
 **A secure client portal for Ntuli Accountants & Associates (Android).**
 
@@ -10,13 +18,13 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 
 | | |
 |---|---|
-| **Author** | Luuvuyo ST10442920,Nyiko ST10450403,Precious ST10452719 |
-| **Module** | Work integration Learning  / XISD6329 |
+| **Author** | Luvuyo Yizani ST10442920, Nyiko Matladi ST10450403, Precious Moloi ST10452719 |
+| **Module** | Work Integrated Learning / XISD6329 |
 | **Platform** | Android 7.0+ (API 24), tested on a physical phone |
 | **Language** | Kotlin |
 | **Backend** | Firebase Authentication + Cloud Firestore |
 | **External API** | Nager.Date public holidays REST API |
-| **Repository** | [https://github.com/Luvuyo14/ApexLedger] |
+| **Repository** | [https://github.com/Luvuyo14/ApexLedger](https://github.com/Luvuyo14/ApexLedger) |
 
 ![Unit tests](https://github.com/Luvuyo14/ApexLedger/actions/workflows/unit-tests.yml/badge.svg)
 **Documentation:** [User guide](USER_GUIDE.md) | [Database design](docs/DATABASE.md) | [Firestore security rules](firestore.rules)
@@ -25,6 +33,7 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 
 ## Table of contents
 
+0. [Video presentation](#video-presentation)
 1. [Features](#features)
 2. [Screenshots](#screenshots)
 3. [Technology](#technology)
@@ -90,7 +99,7 @@ APEXLedger replaces scattered email and WhatsApp threads with one app where clie
 |---|---|---|
 | ![staff](docs/screenshots/staff-dashboard.jpeg) | ![reports](docs/screenshots/reports.jpeg) | ![admin](docs/screenshots/admin-panel.jpeg) |
 
-More screens are in the [user guide](USER_GUIDE.md).
+More screens are in the [user guide](USER_GUIDE.md). Website screenshots are in the [website repository](https://github.com/PreciousMoloi/Apexleger_Web).
 
 ---
 
@@ -106,7 +115,7 @@ More screens are in the [user guide](USER_GUIDE.md).
 | Files | Stored inside Firestore as small pieces (no paid storage plan needed) |
 | Notifications | Firestore listener plus Android `NotificationCompat` |
 | External API | Nager.Date public holidays REST API (`HttpURLConnection` + `org.json`) |
-| Testing | JUnit 4 (30 unit tests) |
+| Testing | JUnit 4 (34 unit tests) + GitHub Actions |
 
 ---
 
@@ -244,7 +253,7 @@ tickets 1 ──── 0..1 ticket_notes                             (same docum
 
 ### 1. Get the code
 ```bash
-git clone https://github.com/[your-username]/ApexLedger.git
+git clone https://github.com/Luvuyo14/ApexLedger.git
 cd ApexLedger
 ```
 
@@ -325,7 +334,7 @@ ApexLedger/
         │   │       ├── NotificationCenter.kt    live bell and phone alerts
         │   │       └── ...                      dates, labels, theme, feedback and more
         │   └── res/                             layouts, drawables, colours, night resources
-        └── test/java/com/ntuli/apexledger/      JUnit unit tests (30)
+        └── test/java/com/ntuli/apexledger/      JUnit unit tests (34)
 ```
 
 ---
@@ -334,7 +343,7 @@ ApexLedger/
 
 ### Automated unit tests
 
-30 JUnit tests in `app/src/test/java/com/ntuli/apexledger/` run on a normal computer, with no phone or internet needed.
+34 JUnit tests in `app/src/test/java/com/ntuli/apexledger/` run on a normal computer, with no phone or internet needed.
 
 | Test class | Tests | What it checks |
 |---|---|---|
@@ -343,8 +352,11 @@ ApexLedger/
 | `ValidatorsTest` | 5 | Email format, password strength (8+ characters, uppercase, number), 10-digit tax number |
 | `LabelsTest` | 5 | Service, status and priority wording; ticket number prefixes (TAX, PAY, ADV, BKP, AUD) |
 | `DateUtilsTest` | 7 | Overdue rules, days until a date, days late, website date format |
+| `DataMigrationTest` | 4 | Old snake_case user fields are renamed to camelCase; already-migrated profiles are left alone; staff profiles only rename fields that exist; all new field names are camelCase |
+| **Total** | **34** | |
 
 ![Unit test report](docs/screenshots/test-report.png)
+
 Run them from Android Studio (right-click `app/src/test` → **Run Tests**) or the terminal:
 
 ```bash
@@ -363,18 +375,18 @@ Every push to `main` runs the unit tests automatically on GitHub Actions (`.gith
 
 ### Manual test checklist (before each demo)
 
-- [ x] Register a client, log out, log in again
-- [ x] Sign in with Google (new and existing account)
-- [x ] Five wrong passwords lock the account
-- [ x] Create a ticket and check its number and created date
-- [ x] Upload a PDF as a client and check that the right accountant is shown
-- [ x] As an accountant, approve the document and check that the client is notified
-- [ x] Tap the notification and check that it opens the document
-- [ x] Message from client to accountant and from admin to a staff member
-- [ x] Deactivate a user and check that they cannot log in
-- [ x] Switch dark mode on and off
-- [ x] Set a due date on a Sunday and on 16 Dec 2026: the warning appears and the next working day is offered
-- [ x] Set a due date in a year never opened before with airplane mode on: the "check skipped" message appears and the date is still saved
+- [x] Register a client, log out, log in again
+- [x] Sign in with Google (new and existing account)
+- [x] Five wrong passwords lock the account
+- [x] Create a ticket and check its number and created date
+- [x] Upload a PDF as a client and check that the right accountant is shown
+- [x] As an accountant, approve the document and check that the client is notified
+- [x] Tap the notification and check that it opens the document
+- [x] Message from client to accountant and from admin to a staff member
+- [x] Deactivate a user and check that they cannot log in
+- [x] Switch dark mode on and off
+- [x] Set a due date on a Sunday and on 16 Dec 2026: the warning appears and the next working day is offered
+- [x] Set a due date in a year never opened before with airplane mode on: the "check skipped" message appears and the date is still saved
 
 ---
 
@@ -425,4 +437,4 @@ Every push to `main` runs the unit tests automatically on GitHub Actions (`.gith
 
 ## Licence
 
-Academic project 
+Academic project
