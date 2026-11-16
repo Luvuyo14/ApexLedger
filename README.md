@@ -1,7 +1,7 @@
 # APEXLedger
 
 ## Video presentation
-**Watch the full demo of all app features:** [(https://youtu.be/xxFlcBzTdEA)]
+**Watch the full demo of all app features:** (https://youtu.be/xxFlcBzTdEA)
 
 ## Links
 | | |
